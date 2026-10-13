@@ -16,6 +16,7 @@ object AppConstants {
     const val LMS_HAPUS_DISKUSI = BASE_URL + "lms_hapus_diskusi.php"
 
     const val PROFIL_URL = BASE_URL + "api_profil.php"
+    const val UJIAN_URL = BASE_URL + "ujian_load.php"
 
     const val API_JADWAL_KELAS = "https://sman1sukorejo.sch.id/esmansa/api_jadwal_kelas.php"
     const val IBADAH_PROSES = BASE_URL + "ibadah_proses_presensi.php"

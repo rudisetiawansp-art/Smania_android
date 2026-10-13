@@ -85,6 +85,11 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        binding.ujian.setOnClickListener {
+            val intent = Intent(this, id.rudissp.smania.ujian.Ujian::class.java)
+            startActivity(intent)
+        }
+
     }
 
     private fun fetchEventData() {
