@@ -1,0 +1,49 @@
+<!-- res/layout/item_rekap_presensi.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:weightSum="4">
+
+    <TextView
+        android:id="@+id/tvTanggal"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="2025-05-01"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvMasuk"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="07:01" />
+
+    <TextView
+        android:id="@+id/tvPulang"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="15:01" />
+
+    <TextView
+        android:id="@+id/tvjenis"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="DL" />
+
+    <TextView
+        android:id="@+id/tvkwk"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="1" />
+</LinearLayout>

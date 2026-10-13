@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Smania</string>
+    <string name="versiapp">SMANIA v.1.2\n ©Kurikulum SMAN 1 Sukorejo</string>
+    <string-array name="months">
+        <item>Januari</item>
+        <item>Februari</item>
+        <item>Maret</item>
+        <item>April</item>
+        <item>Mei</item>
+        <item>Juni</item>
+        <item>Juli</item>
+        <item>Agustus</item>
+        <item>September</item>
+        <item>Oktober</item>
+        <item>November</item>
+        <item>Desember</item>
+    </string-array>
+
+    <string-array name="years">
+        <item>2027</item>
+        <item>2026</item>
+        <item>2025</item>
+    </string-array>
+
+    <string-array name="izin">
+        <item>Sakit</item>
+        <item>Izin</item>
+        <item>Dispen</item>
+    </string-array>
+
+</resources>

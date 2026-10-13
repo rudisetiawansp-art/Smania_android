@@ -1,0 +1,73 @@
+import org.gradle.kotlin.dsl.implementation
+
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace = "id.rudissp.smania"
+    compileSdk = 37
+
+    defaultConfig {
+        applicationId = "id.rudissp.smania"
+        minSdk = 28
+        targetSdk = 37
+        versionCode = 5
+        versionName = "1.2"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            optimization {
+                enable = false
+            }
+
+            isMinifyEnabled = true
+            isShrinkResources = true
+        }
+    }
+    buildFeatures {
+        viewBinding = true
+        buildConfig = true
+        dataBinding = true
+
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+dependencies {
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.material)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.junit)
+
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("com.android.volley:volley:1.2.1")
+    implementation("org.osmdroid:osmdroid-android:6.1.16")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0")
+    implementation("com.github.bumptech.glide:glide:5.0.7")
+    annotationProcessor("com.github.bumptech.glide:compiler:5.0.7")
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+    implementation("androidx.camera:camera-camera2:1.6.1")
+    implementation("androidx.camera:camera-lifecycle:1.6.1")
+    implementation("androidx.camera:camera-view:1.6.1")
+
+    // Import the Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:34.15.0"))
+    implementation("com.google.firebase:firebase-analytics")
+
+    implementation("com.kizitonwose.calendar:view:2.10.1")
+    implementation("com.google.code.gson:gson:2.14.0")
+    implementation("com.vanniktech:android-image-cropper:4.5.0")
+}

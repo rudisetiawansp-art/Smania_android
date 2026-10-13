@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/presensi"
+        android:enabled="true"
+        android:icon="@drawable/icm_presensi"
+        android:title="Presensi"/>
+    <item
+        android:id="@+id/rekap"
+        android:enabled="true"
+        android:icon="@drawable/icm_rekap"
+        android:title="Rekap"/>
+
+    <item
+        android:id="@+id/izin"
+        android:enabled="true"
+        android:icon="@drawable/icm_izin"
+        android:title="Izin"/>
+
+</menu>
