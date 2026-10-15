@@ -103,7 +103,6 @@ class MainActivity : AppCompatActivity() {
                     onLmsClick = { startActivity(Intent(this, LMS::class.java)) },
                     onRaporClick = { startActivity(Intent(this, ActivityRapor::class.java)) },
                     onIbadahClick = { startActivity(Intent(this, Ibadah::class.java)) },
-                    onUjianClick = { startActivity(Intent(this, id.rudissp.smania.ujian.Ujian::class.java)) },
                     onJurusanClick = { startActivity(Intent(this, Jurusan::class.java)) },
                     onUnduhClick = { startActivity(Intent(this, Unduh::class.java)) },
                     onProfilClick = { startActivity(Intent(this, Profil::class.java)) },
@@ -368,7 +367,6 @@ fun MainScreen(
     onLmsClick: () -> Unit,
     onRaporClick: () -> Unit,
     onIbadahClick: () -> Unit,
-    onUjianClick: () -> Unit,
     onJurusanClick: () -> Unit,
     onUnduhClick: () -> Unit,
     onProfilClick: () -> Unit,
@@ -580,7 +578,6 @@ fun MainScreen(
                 Triple("LMS", R.drawable.icm_lms, onLmsClick),
                 Triple("Nilai Rapor", R.drawable.icm_rapor, onRaporClick),
                 Triple("Ibadah", R.drawable.icm_ibadah, onIbadahClick),
-                Triple("Ujian Online", R.drawable.icm_ujian, onUjianClick),
                 Triple("Info Prodi Kuliah", R.drawable.icm_lms, onJurusanClick),
                 Triple("Pusat Unduhan", R.drawable.icm_dok, onUnduhClick)
             )
@@ -696,7 +693,6 @@ fun MainScreenPreview() {
             onLmsClick = {},
             onRaporClick = {},
             onIbadahClick = {},
-            onUjianClick = {},
             onJurusanClick = {},
             onUnduhClick = {},
             onProfilClick = {},

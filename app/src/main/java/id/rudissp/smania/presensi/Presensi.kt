@@ -9,11 +9,29 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.edit
-import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentContainerView
 import com.android.volley.DefaultRetryPolicy
 import com.android.volley.Request
 import com.android.volley.toolbox.StringRequest
@@ -26,8 +44,8 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import id.rudissp.smania.AppConstants
+import id.rudissp.smania.AppTheme
 import id.rudissp.smania.R
-import id.rudissp.smania.databinding.ActivityPresensiBinding
 import org.json.JSONException
 import org.json.JSONObject
 import org.osmdroid.api.IMapController
@@ -47,19 +65,12 @@ import kotlin.math.sin
 
 class Presensi : AppCompatActivity() {
 
-    lateinit var binding: ActivityPresensiBinding
     lateinit var prefs: SharedPreferences
     lateinit var prefs2: SharedPreferences
 
-    //ini lokasi skj
-    //private val targetLatitude = -7.09058002110094
-    //private val targetLongitude = 110.04542030195047
     private var targetLatitude: Double = 0.0
     private var targetLongitude: Double = 0.0
     private var radius: Double = 0.0
-    //lokasi rumahku
-    //private val targetLatitude = -6.930033714644384
-    //private val targetLongitude = 110.20138506062047
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var mapController: IMapController
@@ -70,106 +81,92 @@ class Presensi : AppCompatActivity() {
     private var presensiRadiusPolygon: Polygon? = null
     private var isShiftMalam: Boolean = false
 
+    // Reactive Compose States
+    private var titleName by mutableStateOf("Presensi")
+    private var distanceText by mutableStateOf("Jarak dari lokasi presensi: -")
+    private var statusPresensiText by mutableStateOf("")
+    private var showStatusPresensiText by mutableStateOf(false)
+    private var showBtnPresensiMasuk by mutableStateOf(false)
+    private var showBtnPresensiPulang by mutableStateOf(false)
+    private var showBtnKonfirmasiMasuk by mutableStateOf(false)
+    private var showBtnKonfirmasiPulang by mutableStateOf(false)
+
+    private var selectedTab by mutableIntStateOf(0)
+    private var isPetugasIzinState by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        binding = ActivityPresensiBinding.inflate(layoutInflater)
-        setContentView(binding.root)
         prefs = getSharedPreferences("PREFS", MODE_PRIVATE)
         prefs2 = this.getSharedPreferences("osmdroid", MODE_PRIVATE)
         Configuration.getInstance().load(this, prefs2)
+
+        val namalengkap = prefs.getString("namalengkap", "") ?: ""
+        titleName = if (namalengkap.isNotEmpty()) "Presensi $namalengkap" else "Presensi"
+        isPetugasIzinState = prefs.getBoolean("is_petugas_izin", false)
 
         cekPetugasIzin(prefs.getString("nis", "") ?: "")
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        mapView = binding.mapView
-        mapView.setTileSource(TileSourceFactory.MAPNIK)
-        mapView.setMultiTouchControls(true)
+        mapView = MapView(this).apply {
+            setTileSource(TileSourceFactory.MAPNIK)
+            setMultiTouchControls(true)
+        }
         mapController = mapView.controller
         mapController.setZoom(20.0)
 
-        val namalengkap = prefs.getString("namalengkap", "")
-        binding.topAppBar.title = "Presensi $namalengkap"
-        binding.topAppBar.setNavigationOnClickListener {
-            finish()
-        }
-
-        binding.fragmentContainer.visibility = View.GONE
-
-        var isInitialSetup = true
-
-        binding.shiftToggleGroup.addOnButtonCheckedListener { group, checkedId, isChecked ->
-            if (isInitialSetup) return@addOnButtonCheckedListener
-
-            if (isChecked) {
-                when (checkedId) {
-                    R.id.btnShiftPagi -> {
-                        isShiftMalam = false
-                        Toast.makeText(this, "Shift Pagi Aktif", Toast.LENGTH_SHORT).show()
-                        checkDistanceAndUpdateUI()
+        setContent {
+            AppTheme {
+                PresensiScreen(
+                    title = titleName,
+                    selectedTab = selectedTab,
+                    isPetugasIzin = isPetugasIzinState,
+                    distanceText = distanceText,
+                    statusPresensiText = statusPresensiText,
+                    showStatusPresensiText = showStatusPresensiText,
+                    showBtnPresensiMasuk = showBtnPresensiMasuk,
+                    showBtnPresensiPulang = showBtnPresensiPulang,
+                    showBtnKonfirmasiMasuk = showBtnKonfirmasiMasuk,
+                    showBtnKonfirmasiPulang = showBtnKonfirmasiPulang,
+                    sharedPref = prefs,
+                    onTabSelected = { tabIndex ->
+                        if (tabIndex == 2 && !isPetugasIzinState) {
+                            Toast.makeText(this, "Anda bukan petugas izin", Toast.LENGTH_SHORT).show()
+                        } else {
+                            selectedTab = tabIndex
+                        }
+                    },
+                    onPresensiMasukClick = { presensi("masuk") },
+                    onPresensiPulangClick = { presensi("pulang") },
+                    onKonfirmasiMasukClick = { dialogkonfirmasimasuk() },
+                    onKonfirmasiPulangClick = { dialogkonfirmasipulang() },
+                    onRefreshClick = { getUserLocation() },
+                    onBack = { finish() },
+                    mapViewInstance = mapView,
+                    fragmentContainerProvider = {
+                        AndroidView(
+                            factory = { context ->
+                                FragmentContainerView(context).apply {
+                                    id = View.generateViewId()
+                                    supportFragmentManager.beginTransaction()
+                                        .replace(id, IzinFragment())
+                                        .commit()
+                                }
+                            },
+                            update = { containerView ->
+                                supportFragmentManager.beginTransaction()
+                                    .replace(containerView.id, IzinFragment())
+                                    .commit()
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
-
-                    R.id.btnShiftMalam -> {
-                        isShiftMalam = true
-                        Toast.makeText(this, "Shift Malam Aktif", Toast.LENGTH_SHORT).show()
-                        checkDistanceAndUpdateUI()
-                    }
-                }
+                )
             }
         }
-        binding.shiftToggleGroup.post {
-            binding.shiftToggleGroup.check(R.id.btnShiftPagi) // <- Set tombol Shift Pagi sebagai default
-            isInitialSetup = false
-        }
-
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.presensi -> {
-                    binding.fragmentContainer.removeAllViews()
-                    binding.fragmentContainer.visibility = View.GONE
-                }
-
-                R.id.rekap -> {
-                    binding.fragmentContainer.visibility = View.VISIBLE
-                    loadFragment(RekapPresensiFragment())
-                }
-
-                R.id.izin -> {
-                    if (!prefs.getBoolean("is_petugas_izin", false)) {
-                        Toast.makeText(this, "Anda bukan petugas izin", Toast.LENGTH_SHORT).show()
-                        return@setOnItemSelectedListener false
-                    } else {
-                        binding.fragmentContainer.visibility = View.VISIBLE
-                        loadFragment(IzinFragment())
-                    }
-                }
-
-
-            }
-            true
-        }
-
-//        setupTargetMarker()
-//        getUserLocation()
-//        val nis = prefs.getString("nis", "") ?: ""
-//        cekStatusPresensiDariServer(nis)
 
         ambilLokasiPresensiDariServer()
-
-        binding.btnPresensi.setOnClickListener { presensi("masuk") }
-        binding.btnPresensiPulang.setOnClickListener { presensi("pulang") }
-        binding.btnRefresh.setOnClickListener { getUserLocation() }
-        binding.btnKonfirmasiPresensiMasuk.setOnClickListener { dialogkonfirmasimasuk() }
-        binding.btnKonfirmasiPresensiPulang.setOnClickListener { dialogkonfirmasipulang() }
-
-    }
-
-    private fun loadFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragmentContainer, fragment)
-            .commit()
     }
 
     private fun setupTargetMarker() {
@@ -181,8 +178,7 @@ class Presensi : AppCompatActivity() {
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
-            )
-            != PackageManager.PERMISSION_GRANTED
+            ) != PackageManager.PERMISSION_GRANTED
         ) {
             ActivityCompat.requestPermissions(
                 this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1
@@ -200,8 +196,7 @@ class Presensi : AppCompatActivity() {
                 val location = result.lastLocation ?: return
 
                 if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && location.isMock) || location.isFromMockProvider) {
-                    Toast.makeText(this@Presensi, "Terdeteksi pake fake GPS!!!", Toast.LENGTH_LONG)
-                        .show()
+                    Toast.makeText(this@Presensi, "Terdeteksi pake fake GPS!!!", Toast.LENGTH_LONG).show()
                     return
                 }
 
@@ -223,11 +218,8 @@ class Presensi : AppCompatActivity() {
         userMarker = Marker(mapView).apply {
             position = GeoPoint(userLat, userLng)
             title = "Lokasi Anda"
-            //icon = ContextCompat.getDrawable(this@PresensiActivity, R.drawable.ic_rekap)
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
         }
-
-
 
         mapView.overlays.add(userMarker)
         mapController.setCenter(GeoPoint(userLat, userLng))
@@ -241,28 +233,23 @@ class Presensi : AppCompatActivity() {
             return
         }
 
-        val distance =
-            getDistance(location.latitude, location.longitude, targetLatitude, targetLongitude)
-        binding.tvDistance.text = "Jarak dari lokasi presensi: ${"%.2f".format(distance)} meter"
+        val distance = getDistance(location.latitude, location.longitude, targetLatitude, targetLongitude)
+        distanceText = "Jarak dari lokasi presensi: ${"%.2f".format(distance)} meter"
 
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 
         if (distance < radius) {
             if (isShiftMalam) {
-                // Shift malam: masuk 18–21, pulang 05–07
-                binding.btnPresensi.visibility = if (hour in 18..21) View.VISIBLE else View.GONE
-                binding.btnPresensiPulang.visibility = if (hour in 5..7) View.VISIBLE else View.GONE
+                showBtnPresensiMasuk = (hour in 18..21)
+                showBtnPresensiPulang = (hour in 5..7)
             } else {
-                // Shift pagi: masuk 06–10, pulang 11–22
-                binding.btnPresensi.visibility = if (hour in 5..11) View.VISIBLE else View.GONE
-                binding.btnPresensiPulang.visibility =
-                    if (hour in 12..22) View.VISIBLE else View.GONE
+                showBtnPresensiMasuk = (hour in 5..11)
+                showBtnPresensiPulang = (hour in 12..22)
             }
         } else {
-            binding.btnPresensi.visibility = View.GONE
-            binding.btnPresensiPulang.visibility = View.GONE
-            Toast.makeText(this, "Anda terlalu jauh dari lokasi presensi", Toast.LENGTH_SHORT)
-                .show()
+            showBtnPresensiMasuk = false
+            showBtnPresensiPulang = false
+            Toast.makeText(this, "Anda terlalu jauh dari lokasi presensi", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -283,24 +270,23 @@ class Presensi : AppCompatActivity() {
                     val sudahPulang = json.getBoolean("pulang")
 
                     if (sudahMasuk && sudahPulang) {
-                        binding.tvstatuspresensi.text =
-                            "Anda sudah presensi masuk dan pulang hari ini."
-                        binding.btnKonfirmasiPresensiMasuk.visibility = View.VISIBLE
-                        binding.btnKonfirmasiPresensiPulang.visibility = View.VISIBLE
-                        binding.btnPresensi.visibility = View.GONE
-                        binding.btnPresensiPulang.visibility = View.GONE
+                        statusPresensiText = "Anda sudah presensi masuk dan pulang hari ini."
+                        showBtnKonfirmasiMasuk = true
+                        showBtnKonfirmasiPulang = true
+                        showBtnPresensiMasuk = false
+                        showBtnPresensiPulang = false
                     } else if (sudahMasuk) {
-                        binding.tvstatuspresensi.text = "Anda sudah presensi masuk hari ini."
-                        binding.btnKonfirmasiPresensiMasuk.visibility = View.VISIBLE
-                        binding.btnPresensi.visibility = View.GONE
+                        statusPresensiText = "Anda sudah presensi masuk hari ini."
+                        showBtnKonfirmasiMasuk = true
+                        showBtnPresensiMasuk = false
                     } else if (sudahPulang) {
-                        binding.tvstatuspresensi.text = "Anda sudah presensi pulang hari ini."
-                        binding.btnKonfirmasiPresensiPulang.visibility = View.VISIBLE
-                        binding.btnPresensiPulang.visibility = View.GONE
+                        statusPresensiText = "Anda sudah presensi pulang hari ini."
+                        showBtnKonfirmasiPulang = true
+                        showBtnPresensiPulang = false
                     }
 
                     if (sudahMasuk || sudahPulang) {
-                        binding.tvstatuspresensi.visibility = View.VISIBLE
+                        showStatusPresensiText = true
                     }
 
                 } catch (_: JSONException) {
@@ -317,7 +303,6 @@ class Presensi : AppCompatActivity() {
 
         Volley.newRequestQueue(this).add(stringRequest)
     }
-
 
     private fun presensi(jenis: String) {
         val latitude = userLocation?.latitude ?: 0.0
@@ -344,7 +329,6 @@ class Presensi : AppCompatActivity() {
     ) {
         val queue = Volley.newRequestQueue(this)
 
-        // Mengambil waktu saat ini untuk ditampilkan di dialog
         val sdfTanggal = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
         val sdfJam = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         val currentTanggal = sdfTanggal.format(Date())
@@ -361,25 +345,17 @@ class Presensi : AppCompatActivity() {
                     val status = json.getString("status")
 
                     if (status == "sukses") {
-                        // Membuat Dialog Sukses
                         androidx.appcompat.app.AlertDialog.Builder(this)
                             .setTitle("Presensi Berhasil")
                             .setMessage("Anda berhasil melakukan presensi pada $currentTanggal pukul $currentJam")
-                            .setPositiveButton("OK") { _, _ ->
-                                finish() // Menutup PresensiActivity
-                            }
-                            .setCancelable(false) // User harus menekan OK
+                            .setPositiveButton("OK") { _, _ -> finish() }
+                            .setCancelable(false)
                             .show()
                     } else {
                         Toast.makeText(this, json.getString("pesan"), Toast.LENGTH_SHORT).show()
                     }
                 } catch (_: JSONException) {
-                    // Jika index unik di DB belum dihapus, biasanya lari ke sini karena respon bukan JSON
-                    Toast.makeText(
-                        this,
-                        "Berhasil simpan, tapi respon error. Cek Database.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this, "Berhasil simpan, tapi respon error. Cek Database.", Toast.LENGTH_SHORT).show()
                     finish()
                 }
             },
@@ -412,108 +388,79 @@ class Presensi : AppCompatActivity() {
 
     private fun drawCircle(mapView: MapView, center: GeoPoint, radius: Double) {
         val circlePoints = mutableListOf<GeoPoint>()
-
         val numPoints = 360
         for (i in 0 until numPoints) {
-            val angle = i * (PI / 180) // Convert degree to radians
-            val latOffset = radius * sin(angle) / 100000 // Adjust the scaling
-            val lonOffset = radius * cos(angle) / 100000 // Adjust the scaling
+            val angle = i * (PI / 180)
+            val latOffset = radius * sin(angle) / 100000
+            val lonOffset = radius * cos(angle) / 100000
 
             val newPoint = GeoPoint(center.latitude + latOffset, center.longitude + lonOffset)
             circlePoints.add(newPoint)
         }
 
-        // Menghapus radius lama jika ada
-        presensiRadiusPolygon?.let {
-            mapView.overlays.remove(it)
+        presensiRadiusPolygon?.let { mapView.overlays.remove(it) }
+
+        presensiRadiusPolygon = Polygon(mapView).apply {
+            points = circlePoints
+            fillColor = 0x220000FF
+            strokeColor = -0xffff01 // Solid blue border
         }
 
-        // Membuat polygon baru untuk radius
-        presensiRadiusPolygon = Polygon(mapView)
-        presensiRadiusPolygon?.points = circlePoints
-        presensiRadiusPolygon?.fillColor = 0x220000FF // Semi-transparent blue
-        presensiRadiusPolygon?.strokeColor = 0xFF000FF // Solid blue border
-
-        // Menambahkan polygon baru ke peta
         mapView.overlays.add(presensiRadiusPolygon)
     }
 
     private fun dialogkonfirmasimasuk() {
         MaterialAlertDialogBuilder(this)
             .setTitle("Konfirmasi Presensi")
-            .setMessage(
-                "Anda sudah melakukan presensi masuk hari ini." +
-                        " Apakah Anda ingin melakukan presensi lagi?"
-            )
-            .setPositiveButton("Ya") { _, _ ->
-                presensi("masuk")
-            }
+            .setMessage("Anda sudah melakukan presensi masuk hari ini. Apakah Anda ingin melakukan presensi lagi?")
+            .setPositiveButton("Ya") { _, _ -> presensi("masuk") }
             .show()
-
     }
 
     private fun dialogkonfirmasipulang() {
         MaterialAlertDialogBuilder(this)
             .setTitle("Konfirmasi Presensi")
-            .setMessage(
-                "Anda sudah melakukan presensi pulang hari ini. " +
-                        "Apakah Anda ingin melakukan presensi lagi?"
-            )
-            .setPositiveButton("Ya") { _, _ ->
-                presensi("pulang")
-            }
+            .setMessage("Anda sudah melakukan presensi pulang hari ini. Apakah Anda ingin melakukan presensi lagi?")
+            .setPositiveButton("Ya") { _, _ -> presensi("pulang") }
             .show()
-
     }
 
     private fun ambilLokasiPresensiDariServer() {
         val stringRequest = StringRequest(
-            com.android.volley.Request.Method.GET, AppConstants.PRESENSI_PRENGATURAN,
+            Request.Method.GET, AppConstants.PRESENSI_PRENGATURAN,
             { response ->
                 try {
                     val jsonObject = JSONObject(response)
                     val status = jsonObject.getString("status")
 
                     if (status == "sukses") {
-                        // Jika sukses, ambil data dan konversi ke Double
                         targetLatitude = jsonObject.getString("latitude").toDoubleOrNull() ?: 0.0
                         targetLongitude = jsonObject.getString("longitude").toDoubleOrNull() ?: 0.0
                         radius = jsonObject.getString("radius").toDoubleOrNull() ?: 0.0
 
-                        // Lanjutkan proses memunculkan marker dan cek lokasi
                         setupTargetMarker()
                         getUserLocation()
                         val nis = prefs.getString("nis", "") ?: ""
                         cekStatusPresensiDariServer(nis)
                     } else {
-                        // Jika status gagal dari PHP
-                        Toast.makeText(
-                            this,
-                            "Data pengaturan presensi belum diatur di server.",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        Toast.makeText(this, "Data pengaturan presensi belum diatur di server.", Toast.LENGTH_LONG).show()
                     }
 
                 } catch (e: JSONException) {
                     Log.e("AmbilLokasi", "Error parsing JSON: ${e.message}")
-                    Toast.makeText(this, "Format data server tidak sesuai.", Toast.LENGTH_SHORT)
-                        .show()
+                    Toast.makeText(this, "Format data server tidak sesuai.", Toast.LENGTH_SHORT).show()
                 }
             },
             { error ->
                 Log.e("AmbilLokasi", "Network error: ${error.message}")
-                Toast.makeText(
-                    this,
-                    "Gagal terhubung ke server. Periksa koneksi internet.",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this, "Gagal terhubung ke server. Periksa koneksi internet.", Toast.LENGTH_SHORT).show()
             }
         )
 
         Volley.newRequestQueue(this).add(stringRequest)
     }
 
-    fun cekPetugasIzin(nis: String) {
+    private fun cekPetugasIzin(nis: String) {
         val url = AppConstants.BASE_URL + "presensi_cek_petugas_izin.php?nis=$nis"
         val queue = Volley.newRequestQueue(this)
         val request = StringRequest(
@@ -523,18 +470,14 @@ class Presensi : AppCompatActivity() {
                     val json = JSONObject(response)
                     if (json.getString("status") == "sukses") {
                         val isPetugas = json.getBoolean("is_petugas")
+                        isPetugasIzinState = isPetugas
                         if (isPetugas) {
                             val kelas = json.getString("kelas")
-                            // Simpan ke SharedPreferences
                             prefs.edit {
                                 putString("kelas_petugas", kelas)
                                 putBoolean("is_petugas_izin", true)
                             }
-                            Toast.makeText(
-                                this,
-                                "Anda adalah petugas izin kelas $kelas",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast.makeText(this, "Anda adalah petugas izin kelas $kelas", Toast.LENGTH_SHORT).show()
                         } else {
                             prefs.edit {
                                 putBoolean("is_petugas_izin", false)
@@ -552,6 +495,234 @@ class Presensi : AppCompatActivity() {
         )
         queue.add(request)
     }
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PresensiScreen(
+    title: String,
+    selectedTab: Int,
+    isPetugasIzin: Boolean,
+    distanceText: String,
+    statusPresensiText: String,
+    showStatusPresensiText: Boolean,
+    showBtnPresensiMasuk: Boolean,
+    showBtnPresensiPulang: Boolean,
+    showBtnKonfirmasiMasuk: Boolean,
+    showBtnKonfirmasiPulang: Boolean,
+    sharedPref: SharedPreferences? = null,
+    onTabSelected: (Int) -> Unit,
+    onPresensiMasukClick: () -> Unit,
+    onPresensiPulangClick: () -> Unit,
+    onKonfirmasiMasukClick: () -> Unit,
+    onKonfirmasiPulangClick: () -> Unit,
+    onRefreshClick: () -> Unit,
+    onBack: () -> Unit,
+    mapViewInstance: MapView? = null,
+    fragmentContainerProvider: @Composable (Int) -> Unit = {}
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(title) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    selected = (selectedTab == 0),
+                    onClick = { onTabSelected(0) },
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.icm_presensi),
+                            contentDescription = "Presensi",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = { Text("Presensi") }
+                )
+                NavigationBarItem(
+                    selected = (selectedTab == 1),
+                    onClick = { onTabSelected(1) },
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.icm_rekap),
+                            contentDescription = "Rekap",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = { Text("Rekap") }
+                )
+                if (isPetugasIzin) {
+                    NavigationBarItem(
+                        selected = (selectedTab == 2),
+                        onClick = { onTabSelected(2) },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Assignment,
+                                contentDescription = "Izin"
+                            )
+                        },
+                        label = { Text("Izin") }
+                    )
+                }
+            }
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when (selectedTab) {
+                0 -> {
+                    // Tab Presensi (Map + Panel)
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        // Map
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        ) {
+                            if (mapViewInstance != null) {
+                                AndroidView(
+                                    factory = { mapViewInstance },
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.LightGray),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("Map View Preview")
+                                }
+                            }
+                        }
 
+                        // Presensi Control Panel
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = distanceText,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+
+                                if (showStatusPresensiText && statusPresensiText.isNotEmpty()) {
+                                    Text(
+                                        text = statusPresensiText,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
+                                if (showBtnPresensiMasuk) {
+                                    Button(
+                                        onClick = onPresensiMasukClick,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Presensi Masuk")
+                                    }
+                                }
+
+                                if (showBtnPresensiPulang) {
+                                    Button(
+                                        onClick = onPresensiPulangClick,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Presensi Pulang")
+                                    }
+                                }
+
+                                if (showBtnKonfirmasiMasuk) {
+                                    Button(
+                                        onClick = onKonfirmasiMasukClick,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Ulangi Presensi Masuk")
+                                    }
+                                }
+
+                                if (showBtnKonfirmasiPulang) {
+                                    Button(
+                                        onClick = onKonfirmasiPulangClick,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Ulangi Presensi Pulang")
+                                    }
+                                }
+
+                                OutlinedButton(
+                                    onClick = onRefreshClick,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Refresh")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                1 -> {
+                    // Tab Rekap
+                    RekapPresensiScreen(sharedPref = sharedPref)
+                }
+
+                2 -> {
+                    // Tab Izin
+                    fragmentContainerProvider(2)
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PresensiScreenPreview() {
+    AppTheme {
+        PresensiScreen(
+            title = "Presensi Rudi SSP",
+            selectedTab = 0,
+            isPetugasIzin = true,
+            distanceText = "Jarak dari lokasi presensi: 12.50 meter",
+            statusPresensiText = "Anda sudah presensi masuk hari ini.",
+            showStatusPresensiText = true,
+            showBtnPresensiMasuk = false,
+            showBtnPresensiPulang = false,
+            showBtnKonfirmasiMasuk = true,
+            showBtnKonfirmasiPulang = false,
+            onTabSelected = {},
+            onPresensiMasukClick = {},
+            onPresensiPulangClick = {},
+            onKonfirmasiMasukClick = {},
+            onKonfirmasiPulangClick = {},
+            onRefreshClick = {},
+            onBack = {}
+        )
+    }
 }

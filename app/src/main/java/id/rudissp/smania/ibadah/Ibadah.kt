@@ -6,8 +6,8 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import android.widget.Toast
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -19,6 +19,25 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.camera.view.PreviewView
 import com.android.volley.Request
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
@@ -27,20 +46,21 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import id.rudissp.smania.AppConstants
-import id.rudissp.smania.databinding.ActivityIbadahBinding
 import java.net.URLEncoder
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import androidx.core.graphics.toColorInt
+import id.rudissp.smania.AppTheme
 
 class Ibadah : AppCompatActivity() {
-    lateinit var binding: ActivityIbadahBinding
     private lateinit var cameraExecutor: ExecutorService
 
-    // Session Dummy
-    private var nisSiswa = ""
+    // Session
     lateinit var prefs: SharedPreferences
 
+    // State
+    private var isLoading by mutableStateOf(false)
+    private var previewViewInstance: PreviewView? = null
 
     // Mencegah scan berulang kali setelah berhasil (debounce)
     private var isScanning = true
@@ -57,19 +77,33 @@ class Ibadah : AppCompatActivity() {
         }
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         prefs = getSharedPreferences("PREFS", MODE_PRIVATE)
-        binding = ActivityIbadahBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
         cameraExecutor = Executors.newSingleThreadExecutor()
 
-        binding.toolbarIbadah.setOnClickListener { finish() }
+        setContent {
+            MaterialTheme {
+                AppTheme {
+                    IbadahScreen(
+                        isLoading = isLoading,
+                        onBack = { finish() },
+                        onHalanganClick = { konfirmasiHalangan() },
+                        onRekapClick = {
+                            startActivity(Intent(this, RekapIbadah::class.java))
+                        },
+                        onPreviewViewCreated = { previewView ->
+                            previewViewInstance = previewView
+                            checkCameraPermissionAndStart()
+                        }
+                    )
+                }
+            }
+        }
+    }
 
-        // Meminta izin kamera saat activity dibuka
+    private fun checkCameraPermissionAndStart() {
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.CAMERA
@@ -79,21 +113,10 @@ class Ibadah : AppCompatActivity() {
         } else {
             requestPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
-
-        binding.btnHalangan.setOnClickListener {
-            konfirmasiHalangan()
-        }
-
-        binding.btnRekap.setOnClickListener {
-            startActivity(Intent(this, RekapIbadah::class.java))
-
-
-        }
-
-
     }
 
     private fun startCamera() {
+        val pv = previewViewInstance ?: return
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener({
@@ -103,7 +126,7 @@ class Ibadah : AppCompatActivity() {
             val preview = Preview.Builder()
                 .build()
                 .also {
-                    it.surfaceProvider = binding.viewFinder.surfaceProvider
+                    it.surfaceProvider = pv.surfaceProvider
                 }
 
             // Setup Analyzer (ML Kit)
@@ -167,7 +190,7 @@ class Ibadah : AppCompatActivity() {
                                         Toast.LENGTH_SHORT
                                     ).show()
                                     // Nyalakan lagi setelah delay
-                                    binding.viewFinder.postDelayed({ isScanning = true }, 2000)
+                                    previewViewInstance?.postDelayed({ isScanning = true }, 2000)
                                 }
                             }
                         }
@@ -185,10 +208,8 @@ class Ibadah : AppCompatActivity() {
         val uri = urlScanned.toUri()
         val token = uri.getQueryParameter("token") ?: ""
         val ibadah = uri.getQueryParameter("ibadah") ?: ""
-        val nisSiswa = prefs.getString("nis","").toString()
+        val nisSiswa = prefs.getString("nis", "").toString()
 
-        // --- PERBAIKAN DI SINI ---
-        // Menggunakan URLEncoder agar 'Shalat Dzuhur' menjadi 'Shalat%20Dzuhur'
         val encodedIbadah = URLEncoder.encode(ibadah, "UTF-8")
         val encodedNis = URLEncoder.encode(nisSiswa, "UTF-8")
         val encodedToken = URLEncoder.encode(token, "UTF-8")
@@ -196,11 +217,11 @@ class Ibadah : AppCompatActivity() {
         val urlApi = AppConstants.IBADAH_PROSES +
                 "?token=$encodedToken&ibadah=$encodedIbadah&nis=$encodedNis"
 
-        binding.progressBar.visibility = View.VISIBLE
+        isLoading = true
 
         val request = StringRequest(Request.Method.GET, urlApi,
             { response ->
-                binding.progressBar.visibility = View.GONE
+                isLoading = false
                 try {
                     val json = org.json.JSONObject(response)
                     if (json.getString("status") == "success") {
@@ -213,14 +234,13 @@ class Ibadah : AppCompatActivity() {
                 }
             },
             {
-                binding.progressBar.visibility = View.GONE
+                isLoading = false
                 tampilkanDialogHasil(false, "Gagal", "Koneksi ke server bermasalah")
             }
         )
         Volley.newRequestQueue(this).add(request)
     }
 
-    // Fungsi untuk menampilkan pop-up hasil presensi mirip versi HTML web
     private fun tampilkanDialogHasil(isSuccess: Boolean, judul: String, pesan: String) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle(judul)
@@ -230,10 +250,8 @@ class Ibadah : AppCompatActivity() {
         builder.setPositiveButton("Tutup") { dialog, _ ->
             dialog.dismiss()
             if (isSuccess) {
-                // Jika sukses, bisa langsung kembali ke menu utama atau refresh halaman
                 finish()
             } else {
-                // Jika gagal, nyalakan kembali kamera untuk mencoba scan ulang
                 isScanning = true
             }
         }
@@ -241,7 +259,6 @@ class Ibadah : AppCompatActivity() {
         val dialog = builder.create()
         dialog.show()
 
-        // Opsional: Beri warna teks judul sesuai status (Hijau = Sukses, Merah = Gagal)
         val titleId = resources.getIdentifier("alertTitle", "id", "android")
         val titleTextView = dialog.findViewById<android.widget.TextView>(titleId)
         if (isSuccess) {
@@ -251,7 +268,6 @@ class Ibadah : AppCompatActivity() {
         }
     }
 
-    // ... (Fungsi konfirmasiHalangan() dan kirimDataHalangan() tetap sama persis seperti sebelumnya) ...
     private fun konfirmasiHalangan() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Konfirmasi")
@@ -265,12 +281,12 @@ class Ibadah : AppCompatActivity() {
     }
 
     private fun kirimDataHalangan() {
-        binding.progressBar.visibility = View.VISIBLE
+        isLoading = true
         val url = "https://sman1sukorejo.sch.id/smania/ibadah/proses_halangan.php"
         val stringRequest = object : StringRequest(
             Method.POST, url,
             { response ->
-                binding.progressBar.visibility = View.GONE
+                isLoading = false
                 try {
                     val jsonObject = org.json.JSONObject(response)
                     if (jsonObject.getString("status") == "success") {
@@ -289,13 +305,13 @@ class Ibadah : AppCompatActivity() {
                 }
             },
             { _ ->
-                binding.progressBar.visibility = View.GONE
+                isLoading = false
                 Toast.makeText(this, "Koneksi Gagal", Toast.LENGTH_SHORT).show()
             }
         ) {
             override fun getParams(): MutableMap<String, String> {
                 val params = HashMap<String, String>()
-                params["nis"] = prefs.getString("nis","").toString()
+                params["nis"] = prefs.getString("nis", "").toString()
                 params["status_halangan"] = "1"
                 return params
             }
@@ -306,5 +322,165 @@ class Ibadah : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun IbadahScreen(
+    isLoading: Boolean,
+    onBack: () -> Unit,
+    onHalanganClick: () -> Unit,
+    onRekapClick: () -> Unit,
+    onPreviewViewCreated: (PreviewView) -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Ibadah") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // QR Scanner Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.Black),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AndroidView(
+                            factory = { context ->
+                                PreviewView(context).apply {
+                                    scaleType = PreviewView.ScaleType.FILL_CENTER
+                                    onPreviewViewCreated(this)
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(16.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.Black.copy(alpha = 0.5f)
+                        ) {
+                            Text(
+                                text = "Arahkan ke QR Code Absen",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Laporan Halangan Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    border = BorderStroke(2.dp, Color(0xFFFFEEBA))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Laporan Halangan",
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Gunakan tombol ini jika Anda berhalangan ibadah untuk hari ini.",
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = onHalanganClick,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFE9ECEF),
+                                contentColor = Color(0xFF495057)
+                            ),
+                            border = BorderStroke(1.dp, Color(0xFFCED4DA))
+                        ) {
+                            Text("⚠️ Saya Sedang Berhalangan Hari Ini")
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Lihat Rekap Button
+                Button(
+                    onClick = onRekapClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(28.dp)
+                ) {
+                    Text("Lihat Rekap Ibadah Saya", fontSize = 16.sp)
+                }
+            }
+
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun IbadahScreenPreview() {
+    AppTheme {
+        IbadahScreen(
+            isLoading = false,
+            onBack = {},
+            onHalanganClick = {},
+            onRekapClick = {},
+            onPreviewViewCreated = {}
+        )
     }
 }
