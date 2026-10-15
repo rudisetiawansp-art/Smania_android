@@ -16,7 +16,14 @@ object AppConstants {
     const val LMS_HAPUS_DISKUSI = BASE_URL + "lms_hapus_diskusi.php"
 
     const val PROFIL_URL = BASE_URL + "api_profil.php"
-    const val UJIAN_URL = BASE_URL + "ujian_load.php"
+    const val UJIAN_LOCAL_BASE = "http://192.168.188.80/smania/ujian/"
+    const val UJIAN_PUBLIC_BASE = "http://36.93.181.53/smania/ujian/"
+    const val UJIAN_URL = UJIAN_LOCAL_BASE + "ujian_load.php"
+    const val UJIAN_DETAIL_URL = UJIAN_LOCAL_BASE + "ujian_detail.php"
+    const val UJIAN_VERIFIKASI_URL = UJIAN_LOCAL_BASE + "ujian_verifikasi.php"
+    const val UJIAN_SUBMIT_URL = UJIAN_LOCAL_BASE + "ujian_submit.php"
+    const val UJIAN_CATAT_PELANGGARAN_URL = UJIAN_LOCAL_BASE + "ujian_catat_pelanggaran.php"
+    const val UJIAN_ULANGI_URL = UJIAN_LOCAL_BASE + "ujian_ulangi.php"
 
     const val API_JADWAL_KELAS = "https://sman1sukorejo.sch.id/esmansa/api_jadwal_kelas.php"
     const val IBADAH_PROSES = BASE_URL + "ibadah_proses_presensi.php"
