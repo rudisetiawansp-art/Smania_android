@@ -1,9 +1,11 @@
 package id.rudissp.smania
 
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.icu.text.SimpleDateFormat
 import android.icu.util.TimeZone
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -47,10 +49,15 @@ import id.rudissp.smania.lms.LMS
 import id.rudissp.smania.presensi.Presensi
 import id.rudissp.smania.rapor.ActivityRapor
 import id.rudissp.smania.unduh.Unduh
+import java.net.Inet4Address
+import java.net.NetworkInterface
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+import androidx.core.net.toUri
 
 class MainActivity : AppCompatActivity() {
     lateinit var prefs: SharedPreferences
@@ -101,7 +108,7 @@ class MainActivity : AppCompatActivity() {
                     onPresensiClick = { startActivity(Intent(this, Presensi::class.java)) },
                     onJadwalClick = { startActivity(Intent(this, Jadwal::class.java)) },
                     onLmsClick = { startActivity(Intent(this, LMS::class.java)) },
-                    onUjianClick = { startActivity(Intent(this, id.rudissp.smania.ujian.Ujian::class.java)) },
+                    onUjianClick = {onSsoLoginClicked(this, prefs.getString("nis", ""))},
                     onRaporClick = { startActivity(Intent(this, ActivityRapor::class.java)) },
                     onIbadahClick = { startActivity(Intent(this, Ibadah::class.java)) },
                     onJurusanClick = { startActivity(Intent(this, Jurusan::class.java)) },
@@ -335,6 +342,58 @@ class MainActivity : AppCompatActivity() {
         queue.add(jsonObjectRequest)
     }
 
+    private fun onSsoLoginClicked(context: Context, nis: String?) {
+
+        val baseUrl = if (isLocalNetwork()) {
+            "http://192.168.188.80/smania/"
+        } else {
+            "http://36.93.181.53/smania/"
+        }
+
+        val timestamp = System.currentTimeMillis() / 1000L
+        val signature = generateHmacSha256(nis, timestamp)
+
+        val ssoUrl = "${baseUrl}sso_login.php?nis=$nis&timestamp=$timestamp&signature=$signature"
+
+        val intent = Intent(Intent.ACTION_VIEW, ssoUrl.toUri())
+        context.startActivity(intent)
+    }
+
+    private fun isLocalNetwork(): Boolean {
+        try {
+            val interfaces = NetworkInterface.getNetworkInterfaces()
+            while (interfaces.hasMoreElements()) {
+                val networkInterface = interfaces.nextElement()
+                val addresses = networkInterface.inetAddresses
+                while (addresses.hasMoreElements()) {
+                    val address = addresses.nextElement()
+                    if (!address.isLoopbackAddress && address is Inet4Address) {
+                        val ip = address.hostAddress
+                        if (ip != null && ip.startsWith("192.168.188.")) {
+                            return true
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return false
+    }
+
+    private fun generateHmacSha256(nis: String?, timestamp: Long): String {
+        val secret = "KunciRahasiaEsmansaSuperSangatAman123!"
+        val message = "$nis|$timestamp"
+
+        val mac = Mac.getInstance("HmacSHA256")
+        val secretKeySpec = SecretKeySpec(secret.toByteArray(Charsets.UTF_8), "HmacSHA256")
+        mac.init(secretKeySpec)
+
+        val hmacBytes = mac.doFinal(message.toByteArray(Charsets.UTF_8))
+
+        return hmacBytes.joinToString("") { "%02x".format(it) }
+    }
+
     override fun onResume() {
         super.onResume()
         loadUserData()
@@ -366,7 +425,7 @@ fun MainScreen(
     onPresensiClick: () -> Unit,
     onJadwalClick: () -> Unit,
     onLmsClick: () -> Unit,
-    onUjianClick: () -> Unit = {},
+    onUjianClick: () -> Unit,
     onRaporClick: () -> Unit,
     onIbadahClick: () -> Unit,
     onJurusanClick: () -> Unit,
