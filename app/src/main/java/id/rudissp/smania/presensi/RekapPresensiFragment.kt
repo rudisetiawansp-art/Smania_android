@@ -1,5 +1,6 @@
 package id.rudissp.smania.presensi
 
+import id.rudissp.smania.LoadingIndicator
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -10,7 +11,9 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -156,90 +159,141 @@ fun RekapPresensiScreen(sharedPref: SharedPreferences? = null) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
+        // PERBAIKAN: Menggunakan spacedBy(3.dp) agar antarkartu dalam grouped list menyatu rapat
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            // Dropdown Bulan
-            BulanDropdownField(
-                label = "Bulan",
-                options = bulanList,
-                selectedOption = selectedBulan,
-                onOptionSelected = {
-                    selectedBulan = it
-                    if (sharedPref != null) ambilRekap()
-                }
-            )
+            // Filter Expressive Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = "Filter Periode Presensi",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                        // Dropdown Bulan
+                        BulanDropdownField(
+                            label = "Bulan",
+                            options = bulanList,
+                            selectedOption = selectedBulan,
+                            onOptionSelected = {
+                                selectedBulan = it
+                                if (sharedPref != null) ambilRekap()
+                            }
+                        )
 
-            // Input Tahun
-            OutlinedTextField(
-                value = selectedTahun,
-                onValueChange = { selectedTahun = it },
-                label = { Text("Tahun") },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        keyboardController?.hide()
-                        if (sharedPref != null) ambilRekap()
+                        // Input Tahun
+                        OutlinedTextField(
+                            value = selectedTahun,
+                            onValueChange = { selectedTahun = it },
+                            label = { Text("Tahun") },
+                            shape = RoundedCornerShape(16.dp),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    keyboardController?.hide()
+                                    if (sharedPref != null) ambilRekap()
+                                }
+                            ),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                focusedContainerColor = MaterialTheme.colorScheme.surface
+                            )
+                        )
                     }
-                ),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Table Header
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Tanggal",
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = "Masuk",
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = "Pulang",
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = "Ket.",
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f)
-                )
+                // Spasi khusus antara Card Filter dan Judul Section (20.dp)
+                Spacer(modifier = Modifier.height(20.dp))
             }
 
-            HorizontalDivider()
+            // Section Label
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Riwayat Kehadiran",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "${daftarRekap.size} Hari",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
-            // List Riwayat
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(daftarRekap) { item ->
-                    RekapPresensiRow(item = item)
+                // Spasi khusus antara Judul Section dan Item Pertama (10.dp)
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            // List Riwayat dalam Format Grouped List Rapat
+            if (daftarRekap.isEmpty() && !isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Tidak ada data presensi pada periode ini",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.outline,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                val listSize = daftarRekap.size
+                itemsIndexed(daftarRekap) { index, item ->
+                    val itemShape = when {
+                        listSize == 1 -> RoundedCornerShape(24.dp)
+                        index == 0 -> RoundedCornerShape(
+                            topStart = 24.dp, topEnd = 24.dp,
+                            bottomStart = 4.dp, bottomEnd = 4.dp
+                        )
+                        index == listSize - 1 -> RoundedCornerShape(
+                            topStart = 4.dp, topEnd = 4.dp,
+                            bottomStart = 24.dp, bottomEnd = 24.dp
+                        )
+                        else -> RoundedCornerShape(4.dp)
+                    }
+
+                    RekapPresensiCard(item = item, shape = itemShape)
                 }
             }
         }
@@ -248,10 +302,13 @@ fun RekapPresensiScreen(sharedPref: SharedPreferences? = null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f)),
+                    .background(Color.Black.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                LoadingIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(48.dp)
+                )
             }
         }
     }
@@ -278,13 +335,21 @@ private fun BulanDropdownField(
             readOnly = true,
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface
+            )
         )
         ExposedDropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
@@ -300,50 +365,88 @@ private fun BulanDropdownField(
 }
 
 @Composable
-private fun RekapPresensiRow(item: RekapPresensia) {
+private fun RekapPresensiCard(
+    item: RekapPresensia,
+    shape: androidx.compose.ui.graphics.Shape
+) {
     val isPiket = item.shift == "malam"
-    val textColor = if (isPiket) {
-        MaterialTheme.colorScheme.tertiary
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
-    val keteranganText = if (isPiket) "Piket" else item.jenis
+    val masukKosong = item.masuk.isEmpty() || item.masuk == "-"
+    val pulangKosong = item.pulang.isEmpty() || item.pulang == "-"
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+    val keteranganText = when {
+        isPiket -> "Piket"
+        item.jenis.isNotEmpty() && !item.jenis.equals("Hadir", ignoreCase = true) -> item.jenis
+        masukKosong && pulangKosong -> "Tidak Presensi"
+        masukKosong || pulangKosong -> "Tidak Lengkap"
+        else -> "Hadir"
+    }
+
+    val badgeBg = when {
+        isPiket -> MaterialTheme.colorScheme.tertiaryContainer
+        keteranganText == "Tidak Presensi" || keteranganText == "Tidak Lengkap" -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.primaryContainer
+    }
+
+    val badgeTextColor = when {
+        isPiket -> MaterialTheme.colorScheme.onTertiaryContainer
+        keteranganText == "Tidak Presensi" || keteranganText == "Tidak Lengkap" -> MaterialTheme.colorScheme.onErrorContainer
+        else -> MaterialTheme.colorScheme.onPrimaryContainer
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = shape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Text(
-            text = item.tanggal,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = item.masuk,
-            textAlign = TextAlign.Center,
-            fontSize = 12.sp,
-            color = textColor,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = item.pulang,
-            textAlign = TextAlign.Center,
-            fontSize = 12.sp,
-            color = textColor,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = keteranganText,
-            textAlign = TextAlign.Center,
-            fontSize = 12.sp,
-            color = textColor,
-            modifier = Modifier.weight(1f)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = item.tanggal,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "Masuk: ${if (!masukKosong) item.masuk else "-"}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Pulang: ${if (!pulangKosong) item.pulang else "-"}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Surface(
+                shape = CircleShape,
+                color = badgeBg
+            ) {
+                Text(
+                    text = keteranganText,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = badgeTextColor,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
+        }
     }
 }
 
@@ -351,28 +454,6 @@ private fun RekapPresensiRow(item: RekapPresensia) {
 @Composable
 fun RekapPresensiScreenPreview() {
     AppTheme {
-        Column(modifier = Modifier.padding(16.dp)) {
-            val sampleItems = listOf(
-                RekapPresensia("2026-05-01", "07:00", "15:30", "Hadir", "pagi"),
-                RekapPresensia("2026-05-02", "18:00", "06:00", "Piket", "malam"),
-                RekapPresensia("2026-05-03", "07:15", "15:30", "Terlambat", "pagi")
-            )
-            HorizontalDivider()
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Tanggal", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-                Text("Masuk", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-                Text("Pulang", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-                Text("Ket.", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-            }
-            HorizontalDivider()
-            sampleItems.forEach { item ->
-                RekapPresensiRow(item = item)
-            }
-        }
+        RekapPresensiScreen(sharedPref = null)
     }
 }

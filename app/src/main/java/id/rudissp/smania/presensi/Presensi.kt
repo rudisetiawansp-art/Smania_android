@@ -14,17 +14,24 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.ListAlt
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -522,44 +529,57 @@ fun PresensiScreen(
     fragmentContainerProvider: @Composable (Int) -> Unit = {}
 ) {
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
         topBar = {
-            TopAppBar(
-                title = { Text(title) },
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = title,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Kembali"
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                )
             )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                tonalElevation = 0.dp
+            ) {
                 NavigationBarItem(
                     selected = (selectedTab == 0),
                     onClick = { onTabSelected(0) },
                     icon = {
                         Icon(
-                            painter = painterResource(id = R.drawable.icm_presensi),
+                            imageVector = Icons.Filled.Fingerprint,
                             contentDescription = "Presensi",
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     },
-                    label = { Text("Presensi") }
+                    label = { Text("Presensi", fontWeight = FontWeight.SemiBold) }
                 )
                 NavigationBarItem(
                     selected = (selectedTab == 1),
                     onClick = { onTabSelected(1) },
                     icon = {
                         Icon(
-                            painter = painterResource(id = R.drawable.icm_rekap),
+                            imageVector = Icons.Filled.ListAlt,
                             contentDescription = "Rekap",
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     },
-                    label = { Text("Rekap") }
+                    label = { Text("Rekap", fontWeight = FontWeight.SemiBold) }
                 )
                 if (isPetugasIzin) {
                     NavigationBarItem(
@@ -571,7 +591,7 @@ fun PresensiScreen(
                                 contentDescription = "Izin"
                             )
                         },
-                        label = { Text("Izin") }
+                        label = { Text("Izin", fontWeight = FontWeight.SemiBold) }
                     )
                 }
             }
@@ -584,103 +604,195 @@ fun PresensiScreen(
         ) {
             when (selectedTab) {
                 0 -> {
-                    // Tab Presensi (Map + Panel)
+                    // Tab Presensi (Map + Expressive Floating Panel)
                     Column(
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Map
-                        Box(
+                        // Expressive Map Container Card
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(1f)
+                                .weight(1f),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                         ) {
-                            if (mapViewInstance != null) {
-                                AndroidView(
-                                    factory = { mapViewInstance },
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            } else {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(Color.LightGray),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("Map View Preview")
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(28.dp))
+                            ) {
+                                if (mapViewInstance != null) {
+                                    AndroidView(
+                                        factory = { mapViewInstance },
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "Map View Preview",
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         }
 
-                        // Presensi Control Panel
+                        // Presensi Expressive Control Panel
                         Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(32.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                         ) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    .padding(20.dp),
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
-                                Text(
-                                    text = distanceText,
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-
-                                if (showStatusPresensiText && statusPresensiText.isNotEmpty()) {
-                                    Text(
-                                        text = statusPresensiText,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                // Lokasi & Jarak Information Badge
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.MyLocation,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                            text = distanceText,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
                                 }
 
+                                if (showStatusPresensiText && statusPresensiText.isNotEmpty()) {
+                                    Surface(
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = statusPresensiText,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                                        )
+                                    }
+                                }
+
+                                // Interactive Primary Action Buttons
                                 if (showBtnPresensiMasuk) {
                                     Button(
                                         onClick = onPresensiMasukClick,
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(56.dp),
+                                        shape = CircleShape,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary,
+                                            contentColor = MaterialTheme.colorScheme.onPrimary
+                                        )
                                     ) {
-                                        Text("Presensi Masuk")
+                                        Text("Presensi Masuk", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
 
                                 if (showBtnPresensiPulang) {
                                     Button(
                                         onClick = onPresensiPulangClick,
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(56.dp),
+                                        shape = CircleShape,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary,
+                                            contentColor = MaterialTheme.colorScheme.onPrimary
+                                        )
                                     ) {
-                                        Text("Presensi Pulang")
+                                        Text("Presensi Pulang", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
 
                                 if (showBtnKonfirmasiMasuk) {
                                     Button(
                                         onClick = onKonfirmasiMasukClick,
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(52.dp),
+                                        shape = CircleShape,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                                        )
                                     ) {
-                                        Text("Ulangi Presensi Masuk")
+                                        Text("Ulangi Presensi Masuk", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
 
                                 if (showBtnKonfirmasiPulang) {
                                     Button(
                                         onClick = onKonfirmasiPulangClick,
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(52.dp),
+                                        shape = CircleShape,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                                        )
                                     ) {
-                                        Text("Ulangi Presensi Pulang")
+                                        Text("Ulangi Presensi Pulang", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
 
+                                // Refresh Button
                                 OutlinedButton(
                                     onClick = onRefreshClick,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(52.dp),
+                                    shape = CircleShape,
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.primary
+                                    )
                                 ) {
-                                    Text("Refresh")
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Refresh,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text("Refresh Lokasi", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }

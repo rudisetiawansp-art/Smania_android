@@ -1,0 +1,4 @@
+- [ ] Add Kizitonwose Compose dependency in `app/build.gradle.kts`
+- [ ] Implement `KaldikScreen` Composable with Material 3 Expressive design and Kizitonwose Compose Calendar in `Kaldik.kt`
+- [ ] Remove legacy XML layout files and RecyclerView adapter
+- [ ] Build and verify compilation with gradle build

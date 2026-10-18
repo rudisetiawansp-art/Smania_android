@@ -1,5 +1,6 @@
 package id.rudissp.smania.ibadah
 
+import id.rudissp.smania.LoadingIndicator
 import android.content.SharedPreferences
 import android.icu.util.Calendar
 import android.os.Bundle
@@ -7,11 +8,11 @@ import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.android.volley.Request
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
+import com.google.common.math.LinearTransformation.horizontal
 import id.rudissp.smania.AppConstants
 import id.rudissp.smania.AppTheme
 import org.json.JSONArray
@@ -101,7 +103,7 @@ class RekapIbadah : AppCompatActivity() {
         val bulanDipilih = namaBulan.indexOf(selectedBulan) + 1
         if (bulanDipilih > 0 && selectedTahun.isNotEmpty()) {
             val tahunDipilih = selectedTahun.toInt()
-            labelBulan = "Bulan $selectedBulan"
+            labelBulan = "Bulan $selectedBulan $selectedTahun"
             fetchDataRekap(bulanDipilih, tahunDipilih)
         } else {
             Toast.makeText(this, "Mohon pilih bulan dan tahun yang valid", Toast.LENGTH_SHORT).show()
@@ -201,17 +203,28 @@ fun RekapIbadahScreen(
     onBack: () -> Unit
 ) {
     Scaffold(
+        // Background utama yang paling terang di M3
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
         topBar = {
-            TopAppBar(
-                title = { Text("Rekap Ibadah") },
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "Rekap Ibadah",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Kembali"
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                )
             )
         }
     ) { paddingValues ->
@@ -221,28 +234,35 @@ fun RekapIbadahScreen(
                 .padding(paddingValues)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp), // Spasi M3 lebih lapang
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                // Filter Card
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Filter Card (Bulan & Tahun) - Menggunakan Surface Container untuk elevasi warna
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp), // Radius lebih besar khas M3
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         DropdownMenuField(
                             label = "Bulan",
                             options = bulanList,
                             selectedOption = selectedBulan,
                             onOptionSelected = onBulanSelected,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth()
                         )
 
                         DropdownMenuField(
@@ -250,14 +270,25 @@ fun RekapIbadahScreen(
                             options = tahunList,
                             selectedOption = selectedTahun,
                             onOptionSelected = onTahunSelected,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth()
                         )
 
                         Button(
                             onClick = onCekClick,
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                            shape = CircleShape,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
                         ) {
-                            Text("Cek")
+                            Text(
+                                text = "Cek Rekap",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
                         }
                     }
                 }
@@ -265,22 +296,35 @@ fun RekapIbadahScreen(
                 // Month Label
                 Text(
                     text = labelBulan,
-                    fontSize = 16.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
 
                 // List of Rekap
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    contentPadding = PaddingValues(bottom = 32.dp)
                 ) {
-                    items(listData) { data ->
-                        RekapHariCard(data = data)
+                    val listSize = listData.size
+
+                    itemsIndexed(listData) { index, data ->
+                        val itemShape = when {
+                            listSize == 1 -> RoundedCornerShape(24.dp)
+                            index == 0 -> RoundedCornerShape(
+                                topStart = 24.dp, topEnd = 24.dp,
+                                bottomStart = 4.dp, bottomEnd = 4.dp
+                            )
+                            index == listSize - 1 -> RoundedCornerShape(
+                                topStart = 4.dp, topEnd = 4.dp,
+                                bottomStart = 24.dp, bottomEnd = 24.dp
+                            )
+                            else -> RoundedCornerShape(4.dp)
+                        }
+
+                        RekapHariCard(data = data, shape = itemShape)
                     }
                 }
             }
@@ -289,10 +333,13 @@ fun RekapIbadahScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.3f)),
+                        .background(Color.Black.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    LoadingIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(48.dp)
+                    )
                 }
             }
         }
@@ -321,11 +368,22 @@ private fun DropdownMenuField(
             readOnly = true,
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+            shape = RoundedCornerShape(16.dp), // Radius field input M3
+            // PERBAIKAN: Menambahkan fillMaxWidth langsung di OutlinedTextField
+            modifier = Modifier
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                .fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface
+            )
         )
         ExposedDropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
@@ -341,31 +399,29 @@ private fun DropdownMenuField(
 }
 
 @Composable
-private fun RekapHariCard(data: RekapData) {
+private fun RekapHariCard(
+    data: RekapData,
+    shape: androidx.compose.ui.graphics.Shape
+) {
+    // Penggunaan SurfaceContainer khas M3 untuk item kartu
     val cardBg = if (data.isWeekend) {
-        MaterialTheme.colorScheme.errorContainer
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     } else {
-        MaterialTheme.colorScheme.secondaryContainer
-    }
-
-    val strokeColor = if (data.isWeekend) {
-        MaterialTheme.colorScheme.error
-    } else {
-        MaterialTheme.colorScheme.onPrimary
+        MaterialTheme.colorScheme.surfaceContainer
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = shape,
         colors = CardDefaults.cardColors(containerColor = cardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        border = BorderStroke(1.dp, strokeColor)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 20.dp, vertical = 16.dp), // Padding lebih lapang
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(
                 modifier = Modifier.weight(1f)
@@ -373,47 +429,49 @@ private fun RekapHariCard(data: RekapData) {
                 Text(
                     text = "${data.tanggal} ${data.namaBulan}",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
+                    fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = data.namaHari,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
+            // FlowRow atau Row biasa untuk membungkus badge
             Row(
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (data.isWeekend) {
                     BadgeItem(
                         text = "Libur",
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )
                 } else {
                     if (data.listAktivitas.isEmpty()) {
                         Text(
-                            text = "Kosong",
-                            fontSize = 11.sp,
+                            text = "Belum Ada Data",
+                            fontSize = 12.sp,
                             fontStyle = FontStyle.Italic,
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.outline
                         )
                     } else {
                         data.listAktivitas.forEach { act ->
                             if (act.isHalangan) {
                                 BadgeItem(
                                     text = "Halangan",
-                                    containerColor = MaterialTheme.colorScheme.tertiary,
-                                    contentColor = MaterialTheme.colorScheme.onTertiary
+                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                                 )
                             } else {
                                 BadgeItem(
                                     text = act.namaShalat,
-                                    containerColor = MaterialTheme.colorScheme.secondary,
-                                    contentColor = MaterialTheme.colorScheme.onSecondary
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
                         }
@@ -431,16 +489,15 @@ private fun BadgeItem(
     contentColor: Color
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = CircleShape, // Pill shape untuk badge sangat M3
         color = containerColor,
-        contentColor = contentColor,
-        modifier = Modifier.padding(start = 4.dp)
+        contentColor = contentColor
     ) {
         Text(
             text = text,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
         )
     }
 }
@@ -454,7 +511,7 @@ fun RekapIbadahScreenPreview() {
             selectedTahun = "2025",
             bulanList = listOf("Januari", "Februari", "Maret", "April", "Mei", "Juni"),
             tahunList = listOf("2025", "2024"),
-            labelBulan = "Bulan Mei",
+            labelBulan = "Bulan Mei 2025",
             listData = listOf(
                 RekapData(
                     tanggal = 1,
@@ -480,20 +537,6 @@ fun RekapIbadahScreenPreview() {
                     namaBulan = "Mei",
                     namaHari = "Sabtu",
                     isWeekend = true,
-                    listAktivitas = emptyList()
-                ),
-                RekapData(
-                    tanggal = 4,
-                    namaBulan = "Mei",
-                    namaHari = "Minggu",
-                    isWeekend = true,
-                    listAktivitas = emptyList()
-                ),
-                RekapData(
-                    tanggal = 5,
-                    namaBulan = "Mei",
-                    namaHari = "Senin",
-                    isWeekend = false,
                     listAktivitas = emptyList()
                 )
             ),

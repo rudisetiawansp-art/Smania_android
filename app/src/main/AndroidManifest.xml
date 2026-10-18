@@ -42,7 +42,7 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".MainActivity"
+            android:name=".MainExpressiveActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
@@ -93,7 +93,34 @@
             android:exported="false"
             android:theme="@style/AppTheme"
             android:windowSoftInputMode="adjustResize" />
-
+        <activity
+            android:name=".buku.BukuActivity"
+            android:exported="false"
+            android:label="Buku Digital SMA"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".rekomendasi.RekomendasiActivity"
+            android:exported="false"
+            android:label="Rekomendasi"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".pemilihanmapel.PemilihanMapelActivity"
+            android:exported="false"
+            android:label="Pemilihan Paket Mapel"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".buku.DetailBukuActivity"
+            android:exported="false"
+            android:label="@string/title_activity_detail"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".buku.BacaActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

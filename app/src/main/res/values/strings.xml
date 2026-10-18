@@ -27,5 +27,7 @@
         <item>Izin</item>
         <item>Dispen</item>
     </string-array>
+    <string name="title_activity_rekom">Rekom</string>
+    <string name="title_activity_detail">DetailActivity</string>
 
 </resources>

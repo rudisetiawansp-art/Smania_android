@@ -1,5 +1,6 @@
 package id.rudissp.smania.lms
 
+import id.rudissp.smania.LoadingIndicator
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -8,20 +9,25 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Class
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,7 +46,7 @@ class LMS : AppCompatActivity() {
 
     private var originalLmsList by mutableStateOf<List<LmsItem>>(emptyList())
     private var selectedMapel by mutableStateOf("Semua Mapel")
-    private var titleText by mutableStateOf("LMS")
+    private var titleText by mutableStateOf("LMS Akademik")
     private var isLoading by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,7 +57,7 @@ class LMS : AppCompatActivity() {
         val nisSiswa = prefs.getString("nis", "").toString()
         val kelasSiswa = prefs.getString("kelas", "").toString()
 
-        titleText = if (kelasSiswa.isNotEmpty()) "LMS Kelas $kelasSiswa" else "LMS"
+        titleText = if (kelasSiswa.isNotEmpty()) "LMS Kelas $kelasSiswa" else "LMS Akademik"
 
         setContent {
             AppTheme {
@@ -145,17 +151,31 @@ fun LMSScreen(
     onBack: () -> Unit
 ) {
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
         topBar = {
-            TopAppBar(
-                title = { Text(title) },
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = title,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Kembali"
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                    scrolledContainerColor = Color.Unspecified,
+                    navigationIconContentColor = Color.Unspecified,
+                    titleContentColor = Color.Unspecified,
+                    actionIconContentColor = Color.Unspecified
+                )
             )
         }
     ) { paddingValues ->
@@ -165,52 +185,112 @@ fun LMSScreen(
                 .padding(paddingValues)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                // Filter Bar Mapel
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Expressive Hero Summary Banner Card
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(32.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    tonalElevation = 0.dp
                 ) {
-                    Text(
-                        text = "Pilih Mapel: ",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-
                     Row(
                         modifier = Modifier
-                            .weight(1f)
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        mapelList.forEach { mapel ->
-                            FilterChip(
-                                selected = (mapel == selectedMapel),
-                                onClick = { onMapelSelected(mapel) },
-                                label = { Text(mapel) }
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            modifier = Modifier.size(52.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Filled.Class,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Pembelajaran Daring",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "${lmsItems.size} Modul & Tugas Aktif",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Pilih mata pelajaran melalui menu filter di bawah untuk mempersempit daftar.",
+                                fontSize = 13.sp,
+                                lineHeight = 18.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
                             )
                         }
                     }
                 }
 
-                HorizontalDivider()
-
-                // List LMS
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(vertical = 8.dp)
+                // Expressive Dropdown Filter Card (Mapel)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
-                    items(lmsItems) { item ->
-                        LmsCardItem(
-                            item = item,
-                            onClick = { onItemClick(item) }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp)
+                    ) {
+                        MapelDropdownFilter(
+                            mapelList = mapelList,
+                            selectedMapel = selectedMapel,
+                            onMapelSelected = onMapelSelected
                         )
+                    }
+                }
+
+                // List LMS Items
+                if (lmsItems.isEmpty() && !isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Belum ada materi atau penugasan untuk mata pelajaran ini.",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        contentPadding = PaddingValues(bottom = 28.dp)
+                    ) {
+                        items(lmsItems) { item ->
+                            LmsCardItem(
+                                item = item,
+                                onClick = { onItemClick(item) }
+                            )
+                        }
                     }
                 }
             }
@@ -219,13 +299,156 @@ fun LMSScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.3f)),
+                        .background(Color.Black.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    LoadingIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(48.dp)
+                    )
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MapelDropdownFilter(
+    mapelList: List<String>,
+    selectedMapel: String,
+    onMapelSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Filter Mata Pelajaran",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = selectedMapel,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Pilih Mata Pelajaran") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            ) {
+                mapelList.forEach { mapel ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = mapel,
+                                fontSize = 14.sp,
+                                fontWeight = if (mapel == selectedMapel) FontWeight.Bold else FontWeight.Normal,
+                                color = if (mapel == selectedMapel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                        },
+                        onClick = {
+                            onMapelSelected(mapel)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+data class LmsStatusInfo(
+    val statusText: String,
+    val containerColor: @Composable () -> Color,
+    val contentColor: @Composable () -> Color,
+    val deadlineText: String?
+)
+
+@Composable
+private fun getLmsStatusInfo(item: LmsItem): LmsStatusInfo {
+    val isOnline = item.isOnline == 1
+    val sudahKumpul = item.idPengumpulan != null
+
+    if (!isOnline) {
+        return LmsStatusInfo(
+            statusText = "Tatap Muka",
+            containerColor = { MaterialTheme.colorScheme.secondaryContainer },
+            contentColor = { MaterialTheme.colorScheme.onSecondaryContainer },
+            deadlineText = null
+        )
+    }
+
+    if (sudahKumpul) {
+        val text = if (item.nilai > 0) "Sudah Upload (Nilai: ${item.nilai})" else "Sudah Upload"
+        val deadlineText = formatDeadline(item.deadline)
+        return LmsStatusInfo(
+            statusText = text,
+            containerColor = { MaterialTheme.colorScheme.primaryContainer },
+            contentColor = { MaterialTheme.colorScheme.onPrimaryContainer },
+            deadlineText = deadlineText
+        )
+    }
+
+    var statusText = "Belum Mengumpulkan"
+    var isTerlambat = false
+
+    try {
+        val dbDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val deadlineDate = dbDateFormat.parse(item.deadline)
+        val now = Date()
+        if (deadlineDate != null && now.after(deadlineDate)) {
+            statusText = "Terlambat"
+            isTerlambat = true
+        }
+    } catch (_: Exception) {
+    }
+
+    val deadlineText = formatDeadline(item.deadline)
+    return if (isTerlambat) {
+        LmsStatusInfo(
+            statusText = statusText,
+            containerColor = { MaterialTheme.colorScheme.errorContainer },
+            contentColor = { MaterialTheme.colorScheme.onErrorContainer },
+            deadlineText = deadlineText
+        )
+    } else {
+        LmsStatusInfo(
+            statusText = statusText,
+            containerColor = { MaterialTheme.colorScheme.tertiaryContainer },
+            contentColor = { MaterialTheme.colorScheme.onTertiaryContainer },
+            deadlineText = deadlineText
+        )
+    }
+}
+
+private fun formatDeadline(deadlineStr: String): String? {
+    return try {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val outputFormat = SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault())
+        val date = inputFormat.parse(deadlineStr)
+        if (date != null) "Tenggat: ${outputFormat.format(date)}" else "Tenggat: $deadlineStr"
+    } catch (_: Exception) {
+        if (deadlineStr.isNotBlank()) "Tenggat: $deadlineStr" else null
     }
 }
 
@@ -235,132 +458,119 @@ private fun LmsCardItem(
     onClick: () -> Unit
 ) {
     val isMateri = item.jenis.equals("materi", ignoreCase = true)
+    val statusInfo = getLmsStatusInfo(item)
 
     Card(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Row Judul & Badge Jenis
+            // Top Row: Mapel Badge & Jenis Badge (Expressive Pill Shapes)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = item.judul,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 16.dp)
-                )
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isMateri) Icons.Filled.Book else Icons.Default.Assignment,
+                            contentDescription = null,
+                            modifier = Modifier.size(15.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = item.mapel,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
 
                 if (isMateri) {
                     BadgeChip(
                         text = "Materi",
-                        containerColor = Color(0xFFE8F5E9),
-                        contentColor = Color(0xFF2E7D32)
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 } else {
                     BadgeChip(
                         text = "Penugasan",
-                        containerColor = Color(0xFFFFF3E0),
-                        contentColor = Color(0xFFE65100)
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Badge Mapel
-            BadgeChip(
-                text = item.mapel,
-                containerColor = Color(0xFFE3F2FD),
-                contentColor = Color(0xFF1565C0)
+            // Judul Tugas / Materi
+            Text(
+                text = item.judul,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                lineHeight = 22.sp
             )
 
             if (!isMateri) {
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 
-                // Status Container
-                val isOnline = item.isOnline == 1
-                val sudahKumpul = item.idPengumpulan != null
-
-                var statusText: String
-                var statusColor: Color
-                var deadlineText: String? = null
-
-                val locale = remember { Locale.getDefault() }
-                val dbDateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", locale) }
-                val inputFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", locale) }
-                val outputFormat = remember { SimpleDateFormat("dd/MM/yy HH:mm", locale) }
-
-                if (isOnline) {
-                    if (sudahKumpul) {
-                        statusText = if (item.nilai > 0) {
-                            "Sudah Upload Tugas (Nilai: ${item.nilai})"
-                        } else {
-                            "Sudah Upload Tugas"
-                        }
-                        statusColor = Color(0xFF2E7D32)
-                    } else {
-                        try {
-                            val deadlineDate = dbDateFormat.parse(item.deadline)
-                            val now = Date()
-                            if (deadlineDate != null && now.after(deadlineDate)) {
-                                statusText = "Terlambat"
-                                statusColor = Color(0xFFC62828)
-                            } else {
-                                statusText = "Belum Mengumpulkan"
-                                statusColor = Color(0xFF455A64)
-                            }
-                        } catch (_: Exception) {
-                            statusText = "Belum Mengumpulkan"
-                            statusColor = Color(0xFF455A64)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = statusInfo.containerColor()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (item.idPengumpulan != null) Icons.Filled.CheckCircle else Icons.Filled.Schedule,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = statusInfo.contentColor()
+                            )
+                            Text(
+                                text = statusInfo.statusText,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = statusInfo.contentColor()
+                            )
                         }
                     }
 
-                    try {
-                        val date = inputFormat.parse(item.deadline)
-                        if (date != null) {
-                            deadlineText = "Tenggat: ${outputFormat.format(date)}"
-                        }
-                    } catch (_: Exception) {
-                        deadlineText = "Tenggat: ${item.deadline}"
+                    if (statusInfo.deadlineText != null) {
+                        Text(
+                            text = statusInfo.deadlineText,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                } else {
-                    statusText = "Tugas Tatap Muka"
-                    statusColor = Color(0xFF0277BD)
-                }
-
-                Text(
-                    text = statusText,
-                    fontSize = 16.sp,
-                    color = statusColor
-                )
-
-                if (deadlineText != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = deadlineText,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
         }
@@ -374,15 +584,15 @@ private fun BadgeChip(
     contentColor: Color
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = CircleShape,
         color = containerColor,
         contentColor = contentColor
     ) {
         Text(
             text = text,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
         )
     }
 }

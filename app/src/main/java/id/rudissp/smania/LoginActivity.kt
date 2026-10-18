@@ -47,20 +47,22 @@ class LoginActivity : AppCompatActivity() {
 
         setContent {
             MaterialTheme {
-                LoginScreen(
-                    isLoading = isLoading,
-                    onLoginClick = { nis, pass ->
-                        if (nis.isNotEmpty() && pass.isNotEmpty()) {
-                            login(nis, pass)
-                        } else {
-                            Toast.makeText(
-                                this,
-                                "Username atau password tidak boleh kosong",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                AppTheme {
+                    LoginScreen(
+                        isLoading = isLoading,
+                        onLoginClick = { nis, pass ->
+                            if (nis.isNotEmpty() && pass.isNotEmpty()) {
+                                login(nis, pass)
+                            } else {
+                                Toast.makeText(
+                                    this,
+                                    "Username atau password tidak boleh kosong",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }
@@ -92,7 +94,7 @@ class LoginActivity : AppCompatActivity() {
                             putString("foto", json.optString("foto"))
                         }
 
-                        startActivity(Intent(this@LoginActivity, MainActivity::class.java))
+                        startActivity(Intent(this@LoginActivity, MainExpressiveActivity::class.java))
                         finish()
                     } else {
                         Toast.makeText(this, json.getString("message"), Toast.LENGTH_LONG).show()
@@ -159,7 +161,7 @@ fun LoginScreen(
                     style = TextStyle(
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.primary
                     )
                 )
                 Text(
@@ -167,7 +169,7 @@ fun LoginScreen(
                     style = TextStyle(
                         fontSize = 36.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.primary
                     )
                 )
             }
@@ -215,10 +217,9 @@ fun LoginScreen(
                 enabled = !isLoading
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(
+                    LoadingIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
                     Text(text = "Login", fontSize = 16.sp)
@@ -246,6 +247,8 @@ fun LoginScreen(
 @Composable
 fun LoginScreenPreview() {
     MaterialTheme {
-        LoginScreen(onLoginClick = { _, _ -> })
+        AppTheme {
+            LoginScreen(onLoginClick = { _, _ -> })
+        }
     }
 }

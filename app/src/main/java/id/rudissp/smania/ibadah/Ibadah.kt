@@ -1,5 +1,6 @@
 package id.rudissp.smania.ibadah
 
+import id.rudissp.smania.LoadingIndicator
 import android.Manifest
 import android.content.Intent
 import android.content.SharedPreferences
@@ -15,25 +16,29 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
+import androidx.camera.core.Preview as CameraXPreview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -55,25 +60,19 @@ import id.rudissp.smania.AppTheme
 class Ibadah : AppCompatActivity() {
     private lateinit var cameraExecutor: ExecutorService
 
-    // Session
     lateinit var prefs: SharedPreferences
 
-    // State
     private var isLoading by mutableStateOf(false)
     private var previewViewInstance: PreviewView? = null
-
-    // Mencegah scan berulang kali setelah berhasil (debounce)
     private var isScanning = true
 
-    // Launcher untuk meminta izin kamera
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
             startCamera()
         } else {
-            Toast.makeText(this, "Izin kamera dibutuhkan untuk memindai QR", Toast.LENGTH_LONG)
-                .show()
+            Toast.makeText(this, "Izin kamera dibutuhkan untuk memindai QR", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -84,21 +83,19 @@ class Ibadah : AppCompatActivity() {
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         setContent {
-            MaterialTheme {
-                AppTheme {
-                    IbadahScreen(
-                        isLoading = isLoading,
-                        onBack = { finish() },
-                        onHalanganClick = { konfirmasiHalangan() },
-                        onRekapClick = {
-                            startActivity(Intent(this, RekapIbadah::class.java))
-                        },
-                        onPreviewViewCreated = { previewView ->
-                            previewViewInstance = previewView
-                            checkCameraPermissionAndStart()
-                        }
-                    )
-                }
+            AppTheme {
+                IbadahScreen(
+                    isLoading = isLoading,
+                    onBack = { finish() },
+                    onHalanganClick = { konfirmasiHalangan() },
+                    onRekapClick = {
+                        startActivity(Intent(this, RekapIbadah::class.java))
+                    },
+                    onPreviewViewCreated = { previewView ->
+                        previewViewInstance = previewView
+                        checkCameraPermissionAndStart()
+                    }
+                )
             }
         }
     }
@@ -122,14 +119,12 @@ class Ibadah : AppCompatActivity() {
         cameraProviderFuture.addListener({
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-            // Setup Preview
-            val preview = Preview.Builder()
+            val preview = CameraXPreview.Builder()
                 .build()
                 .also {
                     it.surfaceProvider = pv.surfaceProvider
                 }
 
-            // Setup Analyzer (ML Kit)
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
@@ -139,7 +134,6 @@ class Ibadah : AppCompatActivity() {
                     }
                 }
 
-            // Gunakan kamera belakang
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
@@ -164,8 +158,6 @@ class Ibadah : AppCompatActivity() {
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-
-            // Konfigurasi ML Kit khusus QR Code agar lebih cepat
             val options = BarcodeScannerOptions.Builder()
                 .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
                 .build()
@@ -177,30 +169,28 @@ class Ibadah : AppCompatActivity() {
                     for (barcode in barcodes) {
                         val rawValue = barcode.rawValue
                         if (rawValue != null && isScanning) {
-                            // Hentikan proses scan agar Volley tidak dipanggil berulang kali
                             isScanning = false
 
                             if (rawValue.contains("proses_absen.php")) {
                                 prosesAbsenQr(rawValue)
                             } else {
-                                runOnUiThread {
-                                    Toast.makeText(
-                                        this@Ibadah,
-                                        "QR Code Absen tidak valid",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    // Nyalakan lagi setelah delay
-                                    previewViewInstance?.postDelayed({ isScanning = true }, 2000)
-                                }
+                                protocolToast("QR Code Absen tidak valid")
                             }
                         }
                     }
                 }
                 .addOnCompleteListener {
-                    imageProxy.close() // Wajib ditutup agar frame kamera selanjutnya bisa diproses
+                    imageProxy.close()
                 }
         } else {
             imageProxy.close()
+        }
+    }
+
+    private fun protocolToast(msg: String) {
+        runOnUiThread {
+            Toast.makeText(this@Ibadah, msg, Toast.LENGTH_SHORT).show()
+            previewViewInstance?.postDelayed({ isScanning = true }, 2000)
         }
     }
 
@@ -262,9 +252,9 @@ class Ibadah : AppCompatActivity() {
         val titleId = resources.getIdentifier("alertTitle", "id", "android")
         val titleTextView = dialog.findViewById<android.widget.TextView>(titleId)
         if (isSuccess) {
-            titleTextView?.setTextColor("#2E7D32".toColorInt()) // Hijau
+            titleTextView?.setTextColor("#2E7D32".toColorInt())
         } else {
-            titleTextView?.setTextColor("#D32F2F".toColorInt()) // Merah
+            titleTextView?.setTextColor("#D32F2F".toColorInt())
         }
     }
 
@@ -335,17 +325,27 @@ fun IbadahScreen(
     onPreviewViewCreated: (PreviewView) -> Unit
 ) {
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
         topBar = {
-            TopAppBar(
-                title = { Text("Ibadah") },
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "Absensi Ibadah",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Kembali"
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                )
             )
         }
     ) { paddingValues ->
@@ -358,19 +358,68 @@ fun IbadahScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // QR Scanner Card
+                // 1. Expressive Hero Scanner Instruction Card
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            modifier = Modifier.size(52.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Filled.QrCodeScanner,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Scanner QR Ibadah",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Arahkan kamera ke QR Code absen ibadah harian Anda.",
+                                fontSize = 13.sp,
+                                lineHeight = 18.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                            )
+                        }
+                    }
+                }
+
+                // 2. Camera Preview Card (Tanpa Border, Mengandalkan Kliping dan Elevasi Bayangan M3)
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(300.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.Black),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        .height(320.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(28.dp))
+                    ) {
                         AndroidView(
                             factory = { context ->
                                 PreviewView(context).apply {
@@ -380,98 +429,110 @@ fun IbadahScreen(
                             },
                             modifier = Modifier.fillMaxSize()
                         )
+                    }
+                }
 
-                        Surface(
+                // 3. Laporan Halangan Card (Menggunakan SurfaceContainerLow tanpa border)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Text(
+                                text = "Laporan Halangan",
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Gunakan tombol ini jika Anda berhalangan hadir ibadah untuk hari ini.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Tombol Aksi Sekunder menggunakan Tertiary Container
+                        Button(
+                            onClick = onHalanganClick,
                             modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(16.dp),
-                            shape = RoundedCornerShape(20.dp),
-                            color = Color.Black.copy(alpha = 0.5f)
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = CircleShape,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
                         ) {
                             Text(
-                                text = "Arahkan ke QR Code Absen",
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                text = "Saya Sedang Berhalangan",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
                             )
                         }
                     }
                 }
 
-                // Laporan Halangan Card
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = BorderStroke(2.dp, Color(0xFFFFEEBA))
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Laporan Halangan",
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Gunakan tombol ini jika Anda berhalangan ibadah untuk hari ini.",
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = onHalanganClick,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFE9ECEF),
-                                contentColor = Color(0xFF495057)
-                            ),
-                            border = BorderStroke(1.dp, Color(0xFFCED4DA))
-                        ) {
-                            Text("⚠️ Saya Sedang Berhalangan Hari Ini")
-                        }
-                    }
-                }
+                Spacer(modifier = Modifier.height(8.dp))
 
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Lihat Rekap Button
+                // 4. Lihat Rekap Button (Aksi Utama)
                 Button(
                     onClick = onRekapClick,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(28.dp)
+                        .height(60.dp),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
-                    Text("Lihat Rekap Ibadah Saya", fontSize = 16.sp)
+                    Text("Lihat Rekap Ibadah Saya", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             if (isLoading) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.3f)),
+                        .background(Color.Black.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    LoadingIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(48.dp)
+                    )
                 }
             }
         }
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
 fun IbadahScreenPreview() {
     AppTheme {

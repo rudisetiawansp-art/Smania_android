@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import org.json.JSONObject
+import kotlin.jvm.java
 
 class Splash : AppCompatActivity() {
 
@@ -152,7 +153,7 @@ class Splash : AppCompatActivity() {
             val isLoggedIn = prefs.getBoolean("is_logged_in", false)
             Log.d("SplashActivity", "Status login: $isLoggedIn")
             if (isLoggedIn) {
-                startActivity(Intent(this, MainActivity::class.java))
+                startActivity(Intent(this, MainExpressiveActivity::class.java))
                 finish()
             } else {
                 startActivity(Intent(this, LoginActivity::class.java))
