@@ -39,6 +39,7 @@ import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import id.rudissp.smania.AppTheme
+import id.rudissp.smania.VolleySingleton
 import kotlinx.coroutines.launch
 import org.json.JSONException
 
@@ -110,7 +111,7 @@ class DetailBukuActivity : AppCompatActivity() {
     private fun fetchDetailBuku(slug: String) {
         isLoading = true
         val url = "https://sman1sukorejo.sch.id/smania/android/api_sibi.php/api/buku/$slug"
-        val queue = Volley.newRequestQueue(this)
+        val queue = VolleySingleton.getInstance(this).requestQueue
 
         val request = JsonObjectRequest(
             Request.Method.GET, url, null,

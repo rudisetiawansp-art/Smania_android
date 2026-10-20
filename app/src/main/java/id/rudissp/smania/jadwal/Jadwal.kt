@@ -35,6 +35,7 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import id.rudissp.smania.AppConstants
 import id.rudissp.smania.AppTheme
+import id.rudissp.smania.VolleySingleton
 import org.json.JSONObject
 import java.util.Calendar
 import kotlin.math.abs
@@ -121,7 +122,7 @@ class Jadwal : AppCompatActivity() {
                 Toast.makeText(this, "Koneksi gagal", Toast.LENGTH_SHORT).show()
             }
         )
-        Volley.newRequestQueue(this).add(request)
+        VolleySingleton.getInstance(this).addToRequestQueue(request)
     }
 }
 

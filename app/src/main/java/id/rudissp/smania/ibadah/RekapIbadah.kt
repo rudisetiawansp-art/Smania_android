@@ -32,6 +32,7 @@ import com.android.volley.toolbox.Volley
 import com.google.common.math.LinearTransformation.horizontal
 import id.rudissp.smania.AppConstants
 import id.rudissp.smania.AppTheme
+import id.rudissp.smania.VolleySingleton
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -115,7 +116,7 @@ class RekapIbadah : AppCompatActivity() {
         val nis = prefs.getString("nis", "").toString()
         val url = AppConstants.IBADAH_REKAP + "?nis=$nis&bulan=$bulan&tahun=$tahun"
 
-        val queue = Volley.newRequestQueue(this)
+        val queue = VolleySingleton.getInstance(this).requestQueue
         val request = StringRequest(
             Request.Method.GET, url,
             { response ->

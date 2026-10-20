@@ -46,6 +46,7 @@ import com.google.gson.Gson
 import id.rudissp.smania.AppConstants
 import id.rudissp.smania.AppTheme
 import id.rudissp.smania.VolleyMultipartRequest
+import id.rudissp.smania.VolleySingleton
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -186,7 +187,7 @@ class DetailTugasActivity : AppCompatActivity() {
             }
         }
 
-        Volley.newRequestQueue(this).add(stringRequest)
+        VolleySingleton.getInstance(this).addToRequestQueue(stringRequest)
     }
 
     private fun kirimPesan(pesan: String) {
@@ -222,7 +223,7 @@ class DetailTugasActivity : AppCompatActivity() {
             }
         }
 
-        Volley.newRequestQueue(this).add(stringRequest)
+        VolleySingleton.getInstance(this).addToRequestQueue(stringRequest)
     }
 
     private fun prosesUploadFile(uri: Uri) {
@@ -290,7 +291,7 @@ class DetailTugasActivity : AppCompatActivity() {
             com.android.volley.DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
         )
 
-        Volley.newRequestQueue(this).add(multipartRequest)
+        VolleySingleton.getInstance(this).addToRequestQueue(multipartRequest)
     }
 
     private fun hapusPesan(idDiskusi: Int) {
@@ -324,7 +325,7 @@ class DetailTugasActivity : AppCompatActivity() {
             }
         }
 
-        Volley.newRequestQueue(this).add(stringRequest)
+        VolleySingleton.getInstance(this).addToRequestQueue(stringRequest)
     }
 }
 

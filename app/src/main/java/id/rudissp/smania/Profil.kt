@@ -157,7 +157,7 @@ class Profil : AppCompatActivity() {
             },
             { error -> error.printStackTrace() }
         )
-        Volley.newRequestQueue(this).add(request)
+        VolleySingleton.getInstance(this).addToRequestQueue(request)
     }
 
     private fun updatePassword() {
@@ -167,7 +167,7 @@ class Profil : AppCompatActivity() {
         }
 
         val apiUrl = AppConstants.PROFIL_URL
-        val queue = Volley.newRequestQueue(this)
+        val queue = VolleySingleton.getInstance(this).requestQueue
 
         val stringRequest = object : StringRequest(Method.POST, apiUrl,
             Response.Listener { response ->
@@ -250,7 +250,7 @@ class Profil : AppCompatActivity() {
             val base64String = Base64.encodeToString(byteArray, Base64.DEFAULT)
             val finalBase64 = "data:image/jpeg;base64,$base64String"
 
-            val queue = Volley.newRequestQueue(this)
+            val queue = VolleySingleton.getInstance(this).requestQueue
             val stringRequest = object : StringRequest(Method.POST, apiUrl,
                 Response.Listener { response ->
                     try {
@@ -306,7 +306,7 @@ class Profil : AppCompatActivity() {
             },
             { error -> error.printStackTrace() }
         )
-        Volley.newRequestQueue(this).add(request)
+        VolleySingleton.getInstance(this).addToRequestQueue(request)
     }
 
     private fun loadprofil(nisVal: String) {
@@ -331,7 +331,7 @@ class Profil : AppCompatActivity() {
                 Toast.makeText(this, "Gagal memuat data: ${error.message}", Toast.LENGTH_SHORT).show()
             }
         )
-        Volley.newRequestQueue(this).add(request)
+        VolleySingleton.getInstance(this).addToRequestQueue(request)
     }
 
     private fun parseSiswaFromJson(obj: JSONObject): Datasiswa {

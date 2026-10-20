@@ -38,7 +38,7 @@ import org.json.JSONObject
 
 class LoginActivity : AppCompatActivity() {
 
-    private val queue by lazy { Volley.newRequestQueue(this) }
+    private val queue by lazy { VolleySingleton.getInstance(this).requestQueue }
     private var isLoading by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -22,6 +22,7 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.bumptech.glide.Glide
 import id.rudissp.smania.R
+import id.rudissp.smania.VolleySingleton
 import id.rudissp.smania.databinding.ActivityUnduhBinding
 import org.json.JSONException
 import androidx.core.net.toUri
@@ -61,7 +62,7 @@ class Unduh : AppCompatActivity() {
 
     private fun fetchDataBerkas() {
         val url = BASE_URL + "android/api_berkas.php"
-        val queue = Volley.newRequestQueue(this)
+        val queue = VolleySingleton.getInstance(this).requestQueue
 
         val jsonArrayRequest = JsonArrayRequest(
             Request.Method.GET, url, null,
@@ -177,7 +178,7 @@ class BerkasAdapter(
 
     private fun hapusBerkas(idBerkas: Int, position: Int) {
         val url = baseUrl + "downloadfile.php?hapus=$idBerkas"
-        val queue = Volley.newRequestQueue(context)
+        val queue = VolleySingleton.getInstance(context).requestQueue
         val request = StringRequest(
             Request.Method.GET, url,
             { response ->

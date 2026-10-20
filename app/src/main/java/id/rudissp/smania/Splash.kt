@@ -118,7 +118,7 @@ class Splash : AppCompatActivity() {
             }
         }
 
-        Volley.newRequestQueue(this).add(request)
+        VolleySingleton.getInstance(this).addToRequestQueue(request)
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)

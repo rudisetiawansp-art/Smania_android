@@ -33,6 +33,7 @@ import com.android.volley.Request
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.Volley
 import id.rudissp.smania.AppTheme
+import id.rudissp.smania.VolleySingleton
 
 data class JurusanItem(
     val kelompokProgramStudi: String,
@@ -81,7 +82,7 @@ class Jurusan : AppCompatActivity() {
     private fun fetchDataFromPhp() {
         isLoading = true
         val url = "https://sman1sukorejo.sch.id/esmansa/api_jurusan_all.php"
-        val queue = Volley.newRequestQueue(this)
+        val queue = VolleySingleton.getInstance(this).requestQueue
 
         val jsonArrayRequest = JsonArrayRequest(
             Request.Method.GET, url, null,

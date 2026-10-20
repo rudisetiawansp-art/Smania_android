@@ -36,6 +36,7 @@ import com.android.volley.toolbox.Volley
 import com.google.gson.Gson
 import id.rudissp.smania.AppConstants
 import id.rudissp.smania.AppTheme
+import id.rudissp.smania.VolleySingleton
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -134,7 +135,7 @@ class LMS : AppCompatActivity() {
             }
         }
 
-        Volley.newRequestQueue(this).add(stringRequest)
+        VolleySingleton.getInstance(this).addToRequestQueue(stringRequest)
     }
 }
 

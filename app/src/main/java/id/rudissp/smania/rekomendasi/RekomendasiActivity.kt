@@ -41,6 +41,7 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import id.rudissp.smania.AppConstants
 import id.rudissp.smania.AppTheme
+import id.rudissp.smania.VolleySingleton
 import org.json.JSONObject
 import java.util.Locale
 
@@ -99,7 +100,7 @@ class RekomendasiActivity : AppCompatActivity() {
         isLoading = true
         errorMessage = null
 
-        val queue = Volley.newRequestQueue(this)
+        val queue = VolleySingleton.getInstance(this).requestQueue
         val url = AppConstants.REKOMENDASI_URL
 
         val stringRequest = object : StringRequest(

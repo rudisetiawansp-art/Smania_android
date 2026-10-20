@@ -50,6 +50,7 @@ import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import id.rudissp.smania.AppTheme
+import id.rudissp.smania.VolleySingleton
 import kotlinx.coroutines.delay
 import org.json.JSONException
 import kotlin.time.Duration.Companion.milliseconds
@@ -122,7 +123,7 @@ class BukuActivity : AppCompatActivity() {
         if (query.isNotBlank()) url += "&q=${Uri.encode(query.trim())}"
         if (kategori.isNotBlank() && kategori != "terunduh") url += "&kategori=${Uri.encode(kategori)}"
 
-        val queue = Volley.newRequestQueue(this)
+        val queue = VolleySingleton.getInstance(this).requestQueue
         val jsonObjectRequest = JsonObjectRequest(
             Request.Method.GET, url, null,
             { response ->
@@ -395,7 +396,7 @@ fun BukuScreen(
                         }
                     }
                 } else {
-                    items(filteredList) { item ->
+                    items(filteredList, key = { it.slug }) { item ->
                         BukuCardItem(
                             item = item,
                             refreshTrigger = refreshTrigger,

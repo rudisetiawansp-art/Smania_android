@@ -18,6 +18,7 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import id.rudissp.smania.AppConstants
 import id.rudissp.smania.R
+import id.rudissp.smania.VolleySingleton
 import id.rudissp.smania.databinding.FragmentIzinBinding
 import id.rudissp.smania.databinding.ItemIzinBinding
 import org.json.JSONArray
@@ -79,7 +80,7 @@ class IzinFragment : Fragment() {
 
     // --- 1. Cek Petugas ---
     private fun cekPetugas() {
-        val queue = Volley.newRequestQueue(requireContext())
+        val queue = VolleySingleton.getInstance(requireContext()).requestQueue
         val request = StringRequest(
             Request.Method.GET, "$API_CEK_PETUGAS?nis=$nisPetugas",
             { response ->
@@ -132,7 +133,7 @@ class IzinFragment : Fragment() {
     private lateinit var siswaAdapter: ArrayAdapter<String>
 
     private fun loadSiswa() {
-        val queue = Volley.newRequestQueue(requireContext())
+        val queue = VolleySingleton.getInstance(requireContext()).requestQueue
         val request = StringRequest(
             Request.Method.GET, "$API_GET_SISWA?kelas=$kelasPetugas",
             { response ->
@@ -234,7 +235,7 @@ class IzinFragment : Fragment() {
 
         val url = "$API_GET_IZIN?nis_petugas=$nisPetugas&kelas=$kelasPetugas&bulan=$bulan&tahun=$tahun&nis=$nisFilter"
 
-        val queue = Volley.newRequestQueue(requireContext())
+        val queue = VolleySingleton.getInstance(requireContext()).requestQueue
         val request = StringRequest(
             Request.Method.GET, url,
             { response ->
@@ -285,7 +286,7 @@ class IzinFragment : Fragment() {
         val tipe = tipeMap[tipeForm] ?: "I"
         val keterangan = binding.etKeterangan.text.toString().trim()
 
-        val queue = Volley.newRequestQueue(requireContext())
+        val queue = VolleySingleton.getInstance(requireContext()).requestQueue
         val request = object : StringRequest(Method.POST, API_SIMPAN_IZIN,
             { response ->
                 try {
@@ -330,7 +331,7 @@ class IzinFragment : Fragment() {
     // --- 8. Hapus Izin ---
     private fun hapusIzin(izin: Izin) {
         val url = "$API_HAPUS_IZIN?id=${izin.id}&nis_petugas=$nisPetugas&kelas=$kelasPetugas"
-        val queue = Volley.newRequestQueue(requireContext())
+        val queue = VolleySingleton.getInstance(requireContext()).requestQueue
         val request = StringRequest(
             Request.Method.GET, url,
             { response ->

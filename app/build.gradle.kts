@@ -13,8 +13,8 @@ android {
         applicationId = "id.rudissp.smania"
         minSdk = 28
         targetSdk = 37
-        versionCode = 5
-        versionName = "1.2"
+        versionCode = 6
+        versionName = "2.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.compose.material3)
     implementation(libs.material)
 
     // Compose

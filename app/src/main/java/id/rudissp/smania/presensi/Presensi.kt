@@ -52,6 +52,7 @@ import com.google.android.gms.location.Priority
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import id.rudissp.smania.AppConstants
 import id.rudissp.smania.AppTheme
+import id.rudissp.smania.VolleySingleton
 import id.rudissp.smania.R
 import org.json.JSONException
 import org.json.JSONObject
@@ -308,7 +309,7 @@ class Presensi : AppCompatActivity() {
             }
         }
 
-        Volley.newRequestQueue(this).add(stringRequest)
+        VolleySingleton.getInstance(this).addToRequestQueue(stringRequest)
     }
 
     private fun presensi(jenis: String) {
@@ -334,7 +335,7 @@ class Presensi : AppCompatActivity() {
         longitude: Double,
         shift: String
     ) {
-        val queue = Volley.newRequestQueue(this)
+        val queue = VolleySingleton.getInstance(this).requestQueue
 
         val sdfTanggal = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
         val sdfJam = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
@@ -464,12 +465,12 @@ class Presensi : AppCompatActivity() {
             }
         )
 
-        Volley.newRequestQueue(this).add(stringRequest)
+        VolleySingleton.getInstance(this).addToRequestQueue(stringRequest)
     }
 
     private fun cekPetugasIzin(nis: String) {
         val url = AppConstants.BASE_URL + "presensi_cek_petugas_izin.php?nis=$nis"
-        val queue = Volley.newRequestQueue(this)
+        val queue = VolleySingleton.getInstance(this).requestQueue
         val request = StringRequest(
             Request.Method.GET, url,
             { response ->

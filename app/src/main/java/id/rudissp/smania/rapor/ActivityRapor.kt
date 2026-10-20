@@ -42,6 +42,7 @@ import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import id.rudissp.smania.AppConstants
 import id.rudissp.smania.AppTheme
+import id.rudissp.smania.VolleySingleton
 import org.json.JSONObject
 
 class ActivityRapor : AppCompatActivity() {
@@ -81,7 +82,7 @@ class ActivityRapor : AppCompatActivity() {
         isLoading = true
         errorMessage = null
         val url = AppConstants.BASE_URL + "api_rapor.php?nis=$nis&tingkat=$tingkat"
-        val queue = Volley.newRequestQueue(this)
+        val queue = VolleySingleton.getInstance(this).requestQueue
 
         val request = JsonObjectRequest(
             Request.Method.GET, url, null,

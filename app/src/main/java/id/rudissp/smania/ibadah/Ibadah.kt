@@ -51,6 +51,7 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import id.rudissp.smania.AppConstants
+import id.rudissp.smania.VolleySingleton
 import java.net.URLEncoder
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -228,7 +229,7 @@ class Ibadah : AppCompatActivity() {
                 tampilkanDialogHasil(false, "Gagal", "Koneksi ke server bermasalah")
             }
         )
-        Volley.newRequestQueue(this).add(request)
+        VolleySingleton.getInstance(this).addToRequestQueue(request)
     }
 
     private fun tampilkanDialogHasil(isSuccess: Boolean, judul: String, pesan: String) {
@@ -306,7 +307,7 @@ class Ibadah : AppCompatActivity() {
                 return params
             }
         }
-        Volley.newRequestQueue(this).add(stringRequest)
+        VolleySingleton.getInstance(this).addToRequestQueue(stringRequest)
     }
 
     override fun onDestroy() {

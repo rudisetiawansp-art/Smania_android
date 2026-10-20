@@ -36,6 +36,7 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import id.rudissp.smania.AppConstants
 import id.rudissp.smania.AppTheme
+import id.rudissp.smania.VolleySingleton
 import org.json.JSONArray
 import org.json.JSONException
 import java.util.Calendar
@@ -107,7 +108,7 @@ fun RekapPresensiScreen(sharedPref: SharedPreferences? = null) {
         }
 
         isLoading = true
-        val queue = Volley.newRequestQueue(context)
+        val queue = VolleySingleton.getInstance(context).requestQueue
         val request = object : StringRequest(
             Method.POST, AppConstants.REKAP_PRESENSI,
             { response ->

@@ -38,6 +38,7 @@ import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.kizitonwose.calendar.compose.HorizontalCalendar
+import id.rudissp.smania.VolleySingleton
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.DayPosition
@@ -125,7 +126,7 @@ fun KaldikScreen(
 
         Log.d("DEBUG_KALD", "URL API: $url")
 
-        val queue = Volley.newRequestQueue(context)
+        val queue = VolleySingleton.getInstance(context).requestQueue
         val jsonObjectRequest = JsonObjectRequest(
             Request.Method.GET, url, null,
             { response ->

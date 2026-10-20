@@ -37,6 +37,7 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import id.rudissp.smania.AppConstants
 import id.rudissp.smania.AppTheme
+import id.rudissp.smania.VolleySingleton
 import kotlinx.coroutines.delay
 import org.json.JSONException
 import org.json.JSONObject
@@ -127,7 +128,7 @@ fun PemilihanMapelScreen(
     // 1. FETCH DATA DARI API (GET)
     // ==========================================
     LaunchedEffect(Unit) {
-        val queue = Volley.newRequestQueue(context)
+        val queue = VolleySingleton.getInstance(context).requestQueue
         val url = "$baseUrl/pemilihanmapel_getdata.php?nis=$nis"
 
         val jsonObjectRequest = JsonObjectRequest(
@@ -215,7 +216,7 @@ fun PemilihanMapelScreen(
     // 2. SUBMIT DATA KE API (POST)
     // ==========================================
     fun simpanPilihanKeDatabase() {
-        val queue = Volley.newRequestQueue(context)
+        val queue = VolleySingleton.getInstance(context).requestQueue
         val url = "$baseUrl/pemilihanmapel_submit.php"
 
         val stringRequest = object : StringRequest(

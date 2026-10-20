@@ -26,6 +26,9 @@ import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.Dns
+import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +42,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
@@ -61,6 +65,7 @@ import java.util.Locale
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import androidx.core.net.toUri
+import androidx.wear.compose.material3.Dialog
 import kotlin.jvm.java
 
 class MainExpressiveActivity : AppCompatActivity() {
@@ -112,7 +117,7 @@ class MainExpressiveActivity : AppCompatActivity() {
                     onPresensiClick = { startActivity(Intent(this, Presensi::class.java)) },
                     onJadwalClick = { startActivity(Intent(this, Jadwal::class.java)) },
                     onLmsClick = { startActivity(Intent(this, LMS::class.java)) },
-                    onUjianClick = { onSsoLoginClicked(this, prefs.getString("nis", "")) },
+                    onUjianClick = { baseUrl -> onSsoLoginClicked(this, prefs.getString("nis", ""), baseUrl) },
                     onRaporClick = { startActivity(Intent(this, ActivityRapor::class.java)) },
                     onRekomendasiClick = { startActivity(Intent(this, RekomendasiActivity::class.java)) },
                     onIbadahClick = { startActivity(Intent(this, Ibadah::class.java)) },
@@ -141,7 +146,7 @@ class MainExpressiveActivity : AppCompatActivity() {
     }
 
     private fun fetchEventData() {
-        val requestQueue = Volley.newRequestQueue(this)
+        val requestQueue = VolleySingleton.getInstance(this).requestQueue
         val jsonObjectRequest = JsonObjectRequest(
             Request.Method.GET, apiUrl, null,
             { response ->
@@ -232,7 +237,7 @@ class MainExpressiveActivity : AppCompatActivity() {
     }
 
     private fun loadEventTerdekatDashboard() {
-        val queue = Volley.newRequestQueue(this)
+        val queue = VolleySingleton.getInstance(this).requestQueue
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
         sdf.timeZone = TimeZone.getTimeZone("UTC")
         val timeMinRaw = sdf.format(Date())
@@ -293,31 +298,11 @@ class MainExpressiveActivity : AppCompatActivity() {
         queue.add(jsonObjectRequest)
     }
 
-    private fun onSsoLoginClicked(context: Context, nis: String?) {
-        val baseUrl = if (isLocalNetwork()) "http://192.168.188.80/smania/" else "http://36.93.181.53/smania/"
+    private fun onSsoLoginClicked(context: Context, nis: String?, baseUrl: String) {
         val timestamp = System.currentTimeMillis() / 1000L
         val signature = generateHmacSha256(nis, timestamp)
         val ssoUrl = "${baseUrl}sso_login.php?nis=$nis&timestamp=$timestamp&signature=$signature"
         context.startActivity(Intent(Intent.ACTION_VIEW, ssoUrl.toUri()))
-    }
-
-    private fun isLocalNetwork(): Boolean {
-        try {
-            val interfaces = NetworkInterface.getNetworkInterfaces()
-            while (interfaces.hasMoreElements()) {
-                val networkInterface = interfaces.nextElement()
-                val addresses = networkInterface.inetAddresses
-                while (addresses.hasMoreElements()) {
-                    val address = addresses.nextElement()
-                    if (!address.isLoopbackAddress && address is Inet4Address) {
-                        val ip = address.hostAddress
-                        if (ip != null && ip.startsWith("192.168.188.")) return true
-                    }
-                }
-            }
-        } catch (_: Exception) {
-        }
-        return false
     }
 
     private fun generateHmacSha256(nis: String?, timestamp: Long): String {
@@ -366,7 +351,7 @@ fun MainExpressiveScreen(
     onPresensiClick: () -> Unit,
     onJadwalClick: () -> Unit,
     onLmsClick: () -> Unit,
-    onUjianClick: () -> Unit,
+    onUjianClick: (String) -> Unit,
     onRaporClick: () -> Unit,
     onRekomendasiClick: () -> Unit,
     onIbadahClick: () -> Unit,
@@ -380,6 +365,130 @@ fun MainExpressiveScreen(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
     ) { innerPadding ->
+
+        var showConnectionDialog by remember { mutableStateOf(false) }
+
+        if (showConnectionDialog) {
+            Dialog(onDismissRequest = { showConnectionDialog = false }) {
+                ElevatedCard(
+                    shape = RoundedCornerShape(32.dp),
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                    ),
+                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Header Icon
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(64.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Dns,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Judul
+                        Text(
+                            text = "Pilih Koneksi Ujian",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Deskripsi
+                        Text(
+                            text = "Pilih server yang sesuai dengan jaringan internet yang sedang kamu gunakan saat ini agar koneksi lancar.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        // Stack Pilihan
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Pilihan 1: Wi-Fi Sekolah (Primary)
+                            Button(
+                                onClick = {
+                                    showConnectionDialog = false
+                                    onUjianClick("http://192.168.188.80/smania/")
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            ) {
+                                Icon(Icons.Rounded.Wifi, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Wi-Fi Sekolah", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            }
+
+                            // Pilihan 2: Kuota Pribadi (Tonal / Secondary)
+                            FilledTonalButton(
+                                onClick = {
+                                    showConnectionDialog = false
+                                    onUjianClick("http://36.93.181.53/smania/")
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            ) {
+                                Icon(Icons.Rounded.Public, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Kuota Pribadi", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            }
+
+                            // Batal
+                            TextButton(
+                                onClick = { showConnectionDialog = false },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                            ) {
+                                Text(
+                                    text = "Batal",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -663,13 +772,13 @@ fun MainExpressiveScreen(
                 QuadMenu("Presensi", "Absensi harian & lokasi", Icons.Filled.Fingerprint, onPresensiClick),
                 QuadMenu("Jadwal KBM", "Jadwal pelajaran kelas", Icons.Filled.CalendarMonth, onJadwalClick),
                 QuadMenu("LMS", "Tugas & materi belajar", Icons.Filled.School, onLmsClick),
-                QuadMenu("Ujian Online", "CBT & ujian sekolah", Icons.Filled.Quiz, onUjianClick),
                 QuadMenu("Nilai Rapor", "Rekap nilai semester", Icons.Filled.Assessment, onRaporClick),
                 QuadMenu("Ibadah", "Jurnal & rekap ibadah", Icons.Filled.Mosque, onIbadahClick),
                 QuadMenu("Info Prodi", "Panduan jurusan PTN", Icons.AutoMirrored.Filled.MenuBook, onJurusanClick),
                 QuadMenu("Buku Digital", "Katalog & PDF SMA", Icons.AutoMirrored.Filled.LibraryBooks, onBukuClick),
                 QuadMenu("Pemilihan Mapel", "Pilih paket mapel kelas X",
-                    Icons.AutoMirrored.Filled.Assignment, onPemilihanMapelClick)
+                    Icons.AutoMirrored.Filled.Assignment, onPemilihanMapelClick),
+                QuadMenu("Ujian Online", "CBT & ujian sekolah", Icons.Filled.Quiz) { showConnectionDialog = true },
             )
 
             menuBentoItems.chunked(2).forEach { rowItems ->
@@ -743,7 +852,7 @@ fun MainExpressiveScreen(
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                 ) {
                     Text(
-                        text = "Smania v2.0",
+                        text = "Smania v2.0.1",
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
